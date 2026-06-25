@@ -1,5 +1,7 @@
+@section('page-title', 'Riwayat & Laporan')
+
 <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">📋 Riwayat & Laporan</h1>
+    <h1 class="text-2xl font-bold mb-6">Riwayat & Laporan</h1>
 
     {{-- Filter Tanggal --}}
     <div class="flex gap-4 mb-6">

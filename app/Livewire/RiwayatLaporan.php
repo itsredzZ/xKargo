@@ -28,6 +28,6 @@ class RiwayatLaporan extends Component
     public function render()
     {
         return view('livewire.riwayat-laporan')
-            ->layout('layouts.app');
+            ->layout('layouts.app', ['title' => 'Riwayat & Laporan']);
     }
 }

@@ -27,41 +27,41 @@
             <a href="{{ route('dashboard') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition
                {{ request()->routeIs('dashboard') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                📊 Dashboard
+                Dashboard
             </a>
             <a href="#"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                🏙️ Master Data Kota
+                Master Data Kota
             </a>
             <a href="#"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                🚛 Master Data Truk
+                Master Data Truk
             </a>
             <a href="#"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                📦 Database Barang
+                Database Barang
             </a>
             <a href="#"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                🏭 Depot
+                Depot
             </a>
             <a href="#"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                📝 Input Pengiriman
+                Input Pengiriman
             </a>
             <a href="#"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                ⚙️ Optimasi Hasil
+                Optimasi Hasil
             </a>
             <a href="{{ route('riwayat') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition
                {{ request()->routeIs('riwayat') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                📋 Riwayat & Laporan
+                Riwayat & Laporan
             </a>
             <a href="{{ route('settings') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition
                {{ request()->routeIs('settings') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                🔧 Settings
+                Settings
             </a>
         </nav>
 
@@ -80,7 +80,7 @@
                 @csrf
                 <button type="submit"
                         class="w-full text-left px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">
-                    🚪 Log Out
+                    Log Out
                 </button>
             </form>
         </div>
