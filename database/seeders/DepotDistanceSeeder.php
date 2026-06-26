@@ -1,0 +1,303 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class DepotDistanceSeeder extends Seeder
+{
+    /**
+     * Seed 465 pasang jarak antar kota Jawa Timur (sumber: PSO_no2.xlsx).
+     *
+     * Data disimpan DUA ARAH (A→B dan B→A) = 930 baris total.
+     * Idempotent: menggunakan insertOrIgnore + unique constraint (city_a_id, city_b_id).
+     *
+     * duration_minutes = null (diisi nanti via OSRM sync atau import Excel).
+     */
+    public function run(): void
+    {
+        // Ambil mapping nama → id dari tabel cities
+        $cityMap = DB::table('cities')->pluck('id', 'name')->toArray();
+
+        // 465 pasang jarak (upper triangle) — format: [kota_a, kota_b, km]
+        $pairs = [
+            ['Bangkalan','Banyuwangi',451],['Bangkalan','Bojonegoro',212],
+            ['Bangkalan','Bondowoso',287],['Bangkalan','Gresik',112],
+            ['Bangkalan','Jember',313],['Bangkalan','Jombang',181],
+            ['Bangkalan','Kediri',220],['Bangkalan','Lamongan',141],
+            ['Bangkalan','Lumajang',234],['Bangkalan','Madiun',219],
+            ['Bangkalan','Magetan',251],['Bangkalan','Malang',190],
+            ['Bangkalan','Mojokerto',157],['Bangkalan','Nganjuk',196],
+            ['Bangkalan','Ngawi',234],['Bangkalan','Pacitan',398],
+            ['Bangkalan','Pamekasan',138],['Bangkalan','Pasuruan',162],
+            ['Bangkalan','Ponorogo',277],['Bangkalan','Probolinggo',190],
+            ['Bangkalan','Sampang',87],['Bangkalan','Sidoarjo',126],
+            ['Bangkalan','Situbondo',339],['Bangkalan','Sumenep',206],
+            ['Bangkalan','Trenggalek',311],['Bangkalan','Tuban',225],
+            ['Bangkalan','Tulungagung',279],['Bangkalan','Batu',201],
+            ['Bangkalan','Blitar',298],['Bangkalan','Surabaya',81],
+            ['Banyuwangi','Bojonegoro',530],['Banyuwangi','Bondowoso',173],
+            ['Banyuwangi','Gresik',406],['Banyuwangi','Jember',195],
+            ['Banyuwangi','Jombang',447],['Banyuwangi','Kediri',483],
+            ['Banyuwangi','Lamongan',440],['Banyuwangi','Lumajang',303],
+            ['Banyuwangi','Madiun',485],['Banyuwangi','Magetan',514],
+            ['Banyuwangi','Malang',391],['Banyuwangi','Mojokerto',408],
+            ['Banyuwangi','Nganjuk',451],['Banyuwangi','Ngawi',491],
+            ['Banyuwangi','Pacitan',645],['Banyuwangi','Pamekasan',548],
+            ['Banyuwangi','Pasuruan',338],['Banyuwangi','Ponorogo',528],
+            ['Banyuwangi','Probolinggo',313],['Banyuwangi','Sampang',507],
+            ['Banyuwangi','Sidoarjo',366],['Banyuwangi','Situbondo',149],
+            ['Banyuwangi','Sumenep',613],['Banyuwangi','Trenggalek',548],
+            ['Banyuwangi','Tuban',529],['Banyuwangi','Tulungagung',526],
+            ['Banyuwangi','Batu',407],['Banyuwangi','Blitar',508],
+            ['Banyuwangi','Surabaya',398],['Bojonegoro','Bondowoso',403],
+            ['Bojonegoro','Gresik',172],['Bojonegoro','Jember',398],
+            ['Bojonegoro','Jombang',164],['Bojonegoro','Kediri',179],
+            ['Bojonegoro','Lamongan',124],['Bojonegoro','Lumajang',323],
+            ['Bojonegoro','Madiun',161],['Bojonegoro','Magetan',175],
+            ['Bojonegoro','Malang',259],['Bojonegoro','Mojokerto',162],
+            ['Bojonegoro','Nganjuk',117],['Bojonegoro','Ngawi',129],
+            ['Bojonegoro','Pacitan',329],['Bojonegoro','Pamekasan',343],
+            ['Bojonegoro','Pasuruan',235],['Bojonegoro','Ponorogo',207],
+            ['Bojonegoro','Probolinggo',265],['Bojonegoro','Sampang',296],
+            ['Bojonegoro','Sidoarjo',193],['Bojonegoro','Situbondo',414],
+            ['Bojonegoro','Sumenep',415],['Bojonegoro','Trenggalek',255],
+            ['Bojonegoro','Tuban',74],['Bojonegoro','Tulungagung',226],
+            ['Bojonegoro','Batu',268],['Bojonegoro','Blitar',252],
+            ['Bojonegoro','Surabaya',186],['Bondowoso','Gresik',256],
+            ['Bondowoso','Jember',73],['Bondowoso','Jombang',297],
+            ['Bondowoso','Kediri',336],['Bondowoso','Lamongan',292],
+            ['Bondowoso','Lumajang',188],['Bondowoso','Madiun',334],
+            ['Bondowoso','Magetan',366],['Bondowoso','Malang',239],
+            ['Bondowoso','Mojokerto',257],['Bondowoso','Nganjuk',300],
+            ['Bondowoso','Ngawi',340],['Bondowoso','Pacitan',495],
+            ['Bondowoso','Pamekasan',402],['Bondowoso','Pasuruan',184],
+            ['Bondowoso','Ponorogo',380],['Bondowoso','Probolinggo',157],
+            ['Bondowoso','Sampang',357],['Bondowoso','Sidoarjo',212],
+            ['Bondowoso','Situbondo',59],['Bondowoso','Sumenep',455],
+            ['Bondowoso','Trenggalek',405],['Bondowoso','Tuban',380],
+            ['Bondowoso','Tulungagung',379],['Bondowoso','Batu',254],
+            ['Bondowoso','Blitar',397],['Bondowoso','Surabaya',247],
+            ['Gresik','Jember',244],['Gresik','Jombang',102],
+            ['Gresik','Kediri',146],['Gresik','Lamongan',53],
+            ['Gresik','Lumajang',179],['Gresik','Madiun',143],
+            ['Gresik','Magetan',174],['Gresik','Malang',118],
+            ['Gresik','Mojokerto',63],['Gresik','Nganjuk',108],
+            ['Gresik','Ngawi',148],['Gresik','Pacitan',303],
+            ['Gresik','Pamekasan',201],['Gresik','Pasuruan',92],
+            ['Gresik','Ponorogo',187],['Gresik','Probolinggo',124],
+            ['Gresik','Sampang',159],['Gresik','Sidoarjo',53],
+            ['Gresik','Situbondo',269],['Gresik','Sumenep',267],
+            ['Gresik','Trenggalek',212],['Gresik','Tuban',137],
+            ['Gresik','Tulungagung',190],['Gresik','Batu',135],
+            ['Gresik','Blitar',215],['Gresik','Surabaya',39],
+            ['Jember','Jombang',306],['Jember','Kediri',345],
+            ['Jember','Lamongan',300],['Jember','Lumajang',124],
+            ['Jember','Madiun',354],['Jember','Magetan',382],
+            ['Jember','Malang',256],['Jember','Mojokerto',271],
+            ['Jember','Nganjuk',316],['Jember','Ngawi',360],
+            ['Jember','Pacitan',512],['Jember','Pamekasan',408],
+            ['Jember','Pasuruan',201],['Jember','Ponorogo',394],
+            ['Jember','Probolinggo',174],['Jember','Sampang',362],
+            ['Jember','Sidoarjo',228],['Jember','Situbondo',123],
+            ['Jember','Sumenep',464],['Jember','Trenggalek',405],
+            ['Jember','Tuban',381],['Jember','Tulungagung',384],
+            ['Jember','Batu',267],['Jember','Blitar',381],
+            ['Jember','Surabaya',258],['Jombang','Kediri',96],
+            ['Jombang','Lamongan',117],['Jombang','Lumajang',218],
+            ['Jombang','Madiun',106],['Jombang','Magetan',137],
+            ['Jombang','Malang',155],['Jombang','Mojokerto',49],
+            ['Jombang','Nganjuk',69],['Jombang','Ngawi',109],
+            ['Jombang','Pacitan',270],['Jombang','Pamekasan',257],
+            ['Jombang','Pasuruan',133],['Jombang','Ponorogo',155],
+            ['Jombang','Probolinggo',164],['Jombang','Sampang',213],
+            ['Jombang','Sidoarjo',93],['Jombang','Situbondo',305],
+            ['Jombang','Sumenep',320],['Jombang','Trenggalek',175],
+            ['Jombang','Tuban',169],['Jombang','Tulungagung',150],
+            ['Jombang','Batu',137],['Jombang','Blitar',140],
+            ['Jombang','Surabaya',103],['Kediri','Lamongan',164],
+            ['Kediri','Lumajang',265],['Kediri','Madiun',130],
+            ['Kediri','Magetan',160],['Kediri','Malang',190],
+            ['Kediri','Mojokerto',115],['Kediri','Nganjuk',73],
+            ['Kediri','Ngawi',134],['Kediri','Pacitan',264],
+            ['Kediri','Pamekasan',299],['Kediri','Pasuruan',179],
+            ['Kediri','Ponorogo',175],['Kediri','Probolinggo',211],
+            ['Kediri','Sampang',256],['Kediri','Sidoarjo',139],
+            ['Kediri','Situbondo',350],['Kediri','Sumenep',367],
+            ['Kediri','Trenggalek',96],['Kediri','Tuban',215],
+            ['Kediri','Tulungagung',61],['Kediri','Batu',158],
+            ['Kediri','Blitar',76],['Kediri','Surabaya',145],
+            ['Lamongan','Lumajang',208],['Lamongan','Madiun',159],
+            ['Lamongan','Magetan',189],['Lamongan','Malang',145],
+            ['Lamongan','Mojokerto',80],['Lamongan','Nganjuk',124],
+            ['Lamongan','Ngawi',163],['Lamongan','Pacitan',318],
+            ['Lamongan','Pamekasan',222],['Lamongan','Pasuruan',121],
+            ['Lamongan','Ponorogo',201],['Lamongan','Probolinggo',152],
+            ['Lamongan','Sampang',179],['Lamongan','Sidoarjo',83],
+            ['Lamongan','Situbondo',294],['Lamongan','Sumenep',285],
+            ['Lamongan','Trenggalek',222],['Lamongan','Tuban',88],
+            ['Lamongan','Tulungagung',201],['Lamongan','Batu',157],
+            ['Lamongan','Blitar',234],['Lamongan','Surabaya',69],
+            ['Lumajang','Madiun',260],['Lumajang','Magetan',289],
+            ['Lumajang','Malang',164],['Lumajang','Mojokerto',180],
+            ['Lumajang','Nganjuk',223],['Lumajang','Ngawi',268],
+            ['Lumajang','Pacitan',420],['Lumajang','Pamekasan',314],
+            ['Lumajang','Pasuruan',111],['Lumajang','Ponorogo',301],
+            ['Lumajang','Probolinggo',86],['Lumajang','Sampang',272],
+            ['Lumajang','Sidoarjo',136],['Lumajang','Situbondo',211],
+            ['Lumajang','Sumenep',379],['Lumajang','Trenggalek',313],
+            ['Lumajang','Tuban',292],['Lumajang','Tulungagung',291],
+            ['Lumajang','Batu',176],['Lumajang','Blitar',306],
+            ['Lumajang','Surabaya',166],['Madiun','Magetan',45],
+            ['Madiun','Malang',200],['Madiun','Mojokerto',110],
+            ['Madiun','Nganjuk',66],['Madiun','Ngawi',45],
+            ['Madiun','Pacitan',176],['Madiun','Pamekasan',293],
+            ['Madiun','Pasuruan',175],['Madiun','Ponorogo',53],
+            ['Madiun','Probolinggo',207],['Madiun','Sampang',251],
+            ['Madiun','Sidoarjo',136],['Madiun','Situbondo',344],
+            ['Madiun','Sumenep',359],['Madiun','Trenggalek',134],
+            ['Madiun','Tuban',215],['Madiun','Tulungagung',170],
+            ['Madiun','Batu',200],['Madiun','Blitar',184],
+            ['Madiun','Surabaya',145],['Magetan','Malang',228],
+            ['Magetan','Mojokerto',139],['Magetan','Nganjuk',95],
+            ['Magetan','Ngawi',55],['Magetan','Pacitan',175],
+            ['Magetan','Pamekasan',325],['Magetan','Pasuruan',205],
+            ['Magetan','Ponorogo',59],['Magetan','Probolinggo',237],
+            ['Magetan','Sampang',280],['Magetan','Sidoarjo',165],
+            ['Magetan','Situbondo',373],['Magetan','Sumenep',384],
+            ['Magetan','Trenggalek',140],['Magetan','Tuban',219],
+            ['Magetan','Tulungagung',189],['Magetan','Batu',228],
+            ['Magetan','Blitar',207],['Magetan','Surabaya',173],
+            ['Malang','Mojokerto',113],['Malang','Nganjuk',156],
+            ['Malang','Ngawi',201],['Malang','Pacitan',348],
+            ['Malang','Pamekasan',249],['Malang','Pasuruan',76],
+            ['Malang','Ponorogo',235],['Malang','Probolinggo',106],
+            ['Malang','Sampang',207],['Malang','Sidoarjo',71],
+            ['Malang','Situbondo',249],['Malang','Sumenep',321],
+            ['Malang','Trenggalek',210],['Malang','Tuban',224],
+            ['Malang','Tulungagung',166],['Malang','Batu',40],
+            ['Malang','Blitar',133],['Malang','Surabaya',101],
+            ['Mojokerto','Nganjuk',68],['Mojokerto','Ngawi',108],
+            ['Mojokerto','Pacitan',264],['Mojokerto','Pamekasan',216],
+            ['Mojokerto','Pasuruan',90],['Mojokerto','Ponorogo',148],
+            ['Mojokerto','Probolinggo',122],['Mojokerto','Sampang',173],
+            ['Mojokerto','Sidoarjo',51],['Mojokerto','Situbondo',263],
+            ['Mojokerto','Sumenep',282],['Mojokerto','Trenggalek',171],
+            ['Mojokerto','Tuban',160],['Mojokerto','Tulungagung',149],
+            ['Mojokerto','Batu',114],['Mojokerto','Blitar',158],
+            ['Mojokerto','Surabaya',62],['Nganjuk','Ngawi',65],
+            ['Nganjuk','Pacitan',223],['Nganjuk','Pamekasan',250],
+            ['Nganjuk','Pasuruan',133],['Nganjuk','Ponorogo',108],
+            ['Nganjuk','Probolinggo',164],['Nganjuk','Sampang',209],
+            ['Nganjuk','Sidoarjo',95],['Nganjuk','Situbondo',302],
+            ['Nganjuk','Sumenep',320],['Nganjuk','Trenggalek',135],
+            ['Nganjuk','Tuban',173],['Nganjuk','Tulungagung',114],
+            ['Nganjuk','Batu',164],['Nganjuk','Blitar',127],
+            ['Nganjuk','Surabaya',103],['Ngawi','Pacitan',208],
+            ['Ngawi','Pamekasan',292],['Ngawi','Pasuruan',172],
+            ['Ngawi','Ponorogo',89],['Ngawi','Probolinggo',205],
+            ['Ngawi','Sampang',247],['Ngawi','Sidoarjo',134],
+            ['Ngawi','Situbondo',340],['Ngawi','Sumenep',352],
+            ['Ngawi','Trenggalek',165],['Ngawi','Tuban',172],
+            ['Ngawi','Tulungagung',165],['Ngawi','Batu',199],
+            ['Ngawi','Blitar',178],['Ngawi','Surabaya',141],
+            ['Pacitan','Pamekasan',445],['Pacitan','Pasuruan',333],
+            ['Pacitan','Ponorogo',121],['Pacitan','Probolinggo',367],
+            ['Pacitan','Sampang',401],['Pacitan','Sidoarjo',292],
+            ['Pacitan','Situbondo',500],['Pacitan','Sumenep',522],
+            ['Pacitan','Trenggalek',173],['Pacitan','Tuban',360],
+            ['Pacitan','Tulungagung',219],['Pacitan','Batu',348],
+            ['Pacitan','Blitar',257],['Pacitan','Surabaya',301],
+            ['Pamekasan','Pasuruan',226],['Pamekasan','Ponorogo',328],
+            ['Pamekasan','Probolinggo',259],['Pamekasan','Sampang',45],
+            ['Pamekasan','Sidoarjo',185],['Pamekasan','Situbondo',389],
+            ['Pamekasan','Sumenep',76],['Pamekasan','Trenggalek',338],
+            ['Pamekasan','Tuban',293],['Pamekasan','Tulungagung',321],
+            ['Pamekasan','Batu',263],['Pamekasan','Blitar',332],
+            ['Pamekasan','Surabaya',150],['Pasuruan','Ponorogo',212],
+            ['Pasuruan','Probolinggo',54],['Pasuruan','Sampang',187],
+            ['Pasuruan','Sidoarjo',49],['Pasuruan','Situbondo',200],
+            ['Pasuruan','Sumenep',298],['Pasuruan','Trenggalek',228],
+            ['Pasuruan','Tuban',200],['Pasuruan','Tulungagung',207],
+            ['Pasuruan','Batu',89],['Pasuruan','Blitar',188],
+            ['Pasuruan','Surabaya',80],['Ponorogo','Probolinggo',251],
+            ['Ponorogo','Sampang',289],['Ponorogo','Sidoarjo',179],
+            ['Ponorogo','Situbondo',383],['Ponorogo','Sumenep',394],
+            ['Ponorogo','Trenggalek',84],['Ponorogo','Tuban',249],
+            ['Ponorogo','Tulungagung',136],['Ponorogo','Batu',239],
+            ['Ponorogo','Blitar',173],['Ponorogo','Surabaya',187],
+            ['Probolinggo','Sampang',208],['Probolinggo','Sidoarjo',75],
+            ['Probolinggo','Situbondo',169],['Probolinggo','Sumenep',315],
+            ['Probolinggo','Trenggalek',250],['Probolinggo','Tuban',225],
+            ['Probolinggo','Tulungagung',228],['Probolinggo','Batu',113],
+            ['Probolinggo','Blitar',208],['Probolinggo','Surabaya',104],
+            ['Sampang','Sidoarjo',144],['Sampang','Situbondo',347],
+            ['Sampang','Sumenep',124],['Sampang','Trenggalek',297],
+            ['Sampang','Tuban',249],['Sampang','Tulungagung',276],
+            ['Sampang','Batu',219],['Sampang','Blitar',291],
+            ['Sampang','Surabaya',107],['Sidoarjo','Situbondo',219],
+            ['Sidoarjo','Sumenep',264],['Sidoarjo','Trenggalek',187],
+            ['Sidoarjo','Tuban',154],['Sidoarjo','Tulungagung',167],
+            ['Sidoarjo','Batu',79],['Sidoarjo','Blitar',182],
+            ['Sidoarjo','Surabaya',40],['Situbondo','Sumenep',449],
+            ['Situbondo','Trenggalek',384],['Situbondo','Tuban',369],
+            ['Situbondo','Tulungagung',365],['Situbondo','Batu',249],
+            ['Situbondo','Blitar',347],['Situbondo','Surabaya',236],
+            ['Sumenep','Trenggalek',403],['Sumenep','Tuban',351],
+            ['Sumenep','Tulungagung',381],['Sumenep','Batu',322],
+            ['Sumenep','Blitar',397],['Sumenep','Surabaya',211],
+            ['Trenggalek','Tuban',269],['Trenggalek','Tulungagung',57],
+            ['Trenggalek','Batu',214],['Trenggalek','Blitar',93],
+            ['Trenggalek','Surabaya',208],['Tuban','Tulungagung',158],
+            ['Tuban','Batu',251],['Tuban','Blitar',264],
+            ['Tuban','Surabaya',158],['Tulungagung','Batu',173],
+            ['Tulungagung','Blitar',48],['Tulungagung','Surabaya',183],
+            ['Batu','Blitar',136],['Batu','Surabaya',112],
+            ['Blitar','Surabaya',200],
+        ];
+
+        // Bangun baris dua arah (A→B + B→A)
+        $rows = [];
+        $skipped = 0;
+
+        foreach ($pairs as [$nameA, $nameB, $km]) {
+            $aId = $cityMap[$nameA] ?? null;
+            $bId = $cityMap[$nameB] ?? null;
+
+            if (!$aId || !$bId) {
+                $skipped++;
+                continue;
+            }
+
+            $rows[] = [
+                'city_a_id'        => $aId,
+                'city_b_id'        => $bId,
+                'distance_km'      => $km,
+                'duration_minutes' => null,   // diisi nanti via OSRM atau import Excel
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+            $rows[] = [
+                'city_a_id'        => $bId,
+                'city_b_id'        => $aId,
+                'distance_km'      => $km,
+                'duration_minutes' => null,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+        }
+
+        // Insert dalam batch 200 baris agar tidak timeout
+        $inserted = 0;
+        foreach (array_chunk($rows, 200) as $chunk) {
+            DB::table('depot_distances')->insertOrIgnore($chunk);
+            $inserted += count($chunk);
+        }
+
+        $this->command->info(
+            "✅ DepotDistanceSeeder: {$inserted} baris di-seed"
+            . ($skipped ? " ({$skipped} kota tidak ditemukan, dilewati)" : '.')
+        );
+    }
+}

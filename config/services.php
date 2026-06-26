@@ -34,5 +34,23 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'osrm' => [
+        'base_url' => env('OSRM_BASE_URL', 'https://router.project-osrm.org'),
+        'profile'  => env('OSRM_PROFILE', 'driving'),
+        'speed_kmh' => env('OSRM_SPEED_KMH', 60),
+    ],
+    'streamlit' => [
+        // Token yang dikirim Streamlit di header Authorization: Bearer ...
+        // Harus sama persis dengan LARAVEL_API_TOKEN di .streamlit/secrets.toml
+        'api_token'    => env('STREAMLIT_API_TOKEN', ''),
+
+        // URL internal Streamlit (dipakai Nginx proxy & middleware)
+        'internal_url' => env('STREAMLIT_INTERNAL_URL', 'http://127.0.0.1:8501'),
+
+        // URL publik Streamlit (dipakai iFrame src di Blade views)
+        // Jika pakai Nginx reverse proxy → http://localhost/streamlit
+        // Jika dev tanpa Nginx → http://localhost:8501
+        'public_url'   => env('STREAMLIT_PUBLIC_URL', 'http://localhost:8501'),
+    ],
 
 ];
