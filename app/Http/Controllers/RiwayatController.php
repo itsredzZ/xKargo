@@ -63,18 +63,17 @@ class RiwayatController extends Controller
     {
         $startDate = $request->get('start', now()->subDays(7)->format('Y-m-d'));
         $endDate   = $request->get('end',   now()->format('Y-m-d'));
-
+    
         $data = SimulationResult::whereBetween('run_date', [$startDate, $endDate])
             ->orderByDesc('run_date')
             ->get();
-
+    
         $totalProfit = $data->sum('net_profit');
-
-        // Generate PDF pakai view
-        $html = view('riwayat.pdf', compact('data', 'startDate', 'endDate', 'totalProfit'))->render();
-
-        return response($html)
-            ->header('Content-Type', 'text/html')
-            ->header('Content-Disposition', "attachment; filename=\"laporan_{$startDate}_{$endDate}.pdf\"");
+    
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('riwayat.pdf', compact(
+            'data', 'startDate', 'endDate', 'totalProfit'
+        ));
+    
+        return $pdf->download("laporan_{$startDate}_{$endDate}.pdf");
     }
 }
