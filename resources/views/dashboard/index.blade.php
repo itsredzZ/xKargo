@@ -149,13 +149,19 @@
                     Streamlit berjalan di background. Klik untuk buka halaman optimasi.
                 </p>
             </div>
-            <div class="flex gap-3">
+            
+            {{-- Tambahan Tombol Database Barang di sini --}}
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('pso.items') }}"
+                   class="bg-blue-800 hover:bg-blue-600 text-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition border border-blue-500 flex items-center gap-1.5">
+                    📋 Database Barang
+                </a>
                 <a href="{{ route('pso.orders') }}"
-                   class="bg-white text-blue-800 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-medium transition">
+                   class="bg-white text-blue-800 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
                     📦 Input Pesanan
                 </a>
                 <a href="{{ route('pso.run') }}"
-                   class="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition border border-blue-400">
+                   class="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition border border-blue-400 flex items-center gap-1.5">
                     ⚡ Jalankan PSO
                 </a>
             </div>
