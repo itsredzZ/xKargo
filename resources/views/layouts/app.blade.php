@@ -157,6 +157,10 @@
                 <p class="text-blue-400 text-xs font-semibold uppercase tracking-wider px-3 pt-5 pb-1">
                     Administrasi
                 </p>
+                <a href="{{ route('riwayat.index') }}"
+                    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('riwayat.*') ? 'active' : '' }}">
+                    📋 <span>Riwayat & Laporan</span>
+                </a>
                 <a href="{{ route('settings.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                     ⚙️ <span>Parameter PSO</span>
