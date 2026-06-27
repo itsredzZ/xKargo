@@ -10,18 +10,29 @@ class DeliveryOrder extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_id', 'origin_depot_id', 'destination_city_id', 
-        'quantity', 'order_date', 'status'
+        'origin_depot_id', 
+        'destination_city_id', 
+        'order_date', 
+        'status', 
+        'source', 
+        'created_by', 
+        'notes'
     ];
 
-    // Relasi: Pesanan ini memuat barang apa?
-    public function item()
+    // SATU pesanan bisa punya BANYAK barang fisik (Sesuai DB baru)
+    public function items()
     {
-        return $this->belongsTo(Item::class, 'item_id');
+        return $this->hasMany(Item::class, 'order_id');
     }
 
-    // Relasi: Pesanan ini tujuannya ke kota mana?
-    public function destination()
+    // Pesanan ini berangkat dari depot mana?
+    public function originDepot()
+    {
+        return $this->belongsTo(City::class, 'origin_depot_id');
+    }
+
+    // Pesanan ini ditujukan ke kota mana?
+    public function destinationCity()
     {
         return $this->belongsTo(City::class, 'destination_city_id');
     }

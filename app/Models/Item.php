@@ -10,12 +10,19 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_name', 'weight_kg', 'length_cm', 'width_cm', 'height_cm'
+        'order_id', 
+        'name', 
+        'length_cm', 
+        'width_cm', 
+        'height_cm', 
+        'weight_kg', 
+        'status', 
+        'is_carryover'
     ];
 
-    // Satu jenis barang bisa ada di banyak antrean pesanan
-    public function deliveryOrders()
+    // SATU barang dimiliki oleh SATU pesanan (Sesuai DB baru: items.order_id -> delivery_orders.id)
+    public function deliveryOrder()
     {
-        return $this->hasMany(DeliveryOrder::class, 'item_id');
+        return $this->belongsTo(DeliveryOrder::class, 'order_id');
     }
 }

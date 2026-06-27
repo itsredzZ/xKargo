@@ -1,279 +1,204 @@
 <?php
-<<<<<<< HEAD
 
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Item;
+use App\Models\DeliveryOrder;
 use App\Models\SimulationResult;
 use App\Models\CarryoverItem;
 use App\Models\RelocationLog;
 use App\Models\Truck;
 use App\Models\City;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class PsoController extends Controller
 {
-    /**
-     * Halaman Utama Optimasi & Hasil (Menampilkan Blade)
-     */
-    public function results()
+    // Halaman Input Pesanan (Sementara, untuk testing)
+    public function orders()
     {
-        // 1. Ambil item yang statusnya 'pending' untuk hari ini (dari input pengiriman)
-        $itemsHariIni = Item::whereDate('created_at', Carbon::today())
-                             ->where('status', 'pending')
-                             ->with('cityOrigin', 'cityDestination')
-                             ->get();
+        $depots = City::where('is_depot', 1)->where('is_active', 1)->get();
+        $allCities = City::where('is_active', 1)->get();
+        $todayOrders = DeliveryOrder::whereDate('order_date', Carbon::today())
+            ->where('status', 'pending')
+            ->with(['items', 'originDepot', 'destinationCity'])
+            ->orderBy('id', 'desc')->get();
 
-        // 2. Ambil data truk yang aktif untuk dikirim ke JS (misal buat mapping)
-        $trucks = Truck::where('is_active', true)->get();
-
-        return view('pso.results', compact('itemsHariIni', 'trucks'));
+        return view('pso.orders', compact('depots', 'allCities', 'todayOrders'));
     }
 
-    /**
-     * API Endpoint: Jalankan Python PSO via AJAX
-     */
+    // Simpan Pesanan Baru
+    public function storeOrder(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'length_cm' => 'required|numeric|min:1',
+            'width_cm' => 'required|numeric|min:1',
+            'height_cm' => 'required|numeric|min:1',
+            'weight_kg' => 'required|numeric|min:0.1',
+            'origin_depot_id' => 'required|exists:cities,id',
+            'destination_city_id' => 'required|exists:cities,id',
+        ]);
+
+        $order = DeliveryOrder::create([
+            'origin_depot_id' => $request->origin_depot_id,
+            'destination_city_id' => $request->destination_city_id,
+            'order_date' => Carbon::today(),
+            'status' => 'pending',
+            'source' => 'manual',
+        ]);
+
+        Item::create([
+            'order_id' => $order->id,
+            'name' => $request->name,
+            'length_cm' => $request->length_cm,
+            'width_cm' => $request->width_cm,
+            'height_cm' => $request->height_cm,
+            'weight_kg' => $request->weight_kg,
+            'status' => 'menunggu',
+            'is_carryover' => false,
+        ]);
+
+        return redirect()->route('pso.orders')->with('success', 'Barang berhasil ditambahkan!');
+    }
+
+    // Endpoint API untuk ambil data items
+    public function items()
+    {
+        $items = Item::where('status', 'menunggu')
+            ->whereHas('deliveryOrder', fn($q) => $q->whereDate('order_date', Carbon::today())->where('status', 'pending'))
+            ->with('deliveryOrder.originDepot', 'deliveryOrder.destinationCity')
+            ->get()->map(fn($item) => [
+                'id' => $item->id,
+                'nama' => $item->name,
+                'panjang' => (float) $item->length_cm,
+                'lebar' => (float) $item->width_cm,
+                'tinggi' => (float) $item->height_cm,
+                'berat_fisik' => (float) $item->weight_kg,
+                'kota_asal' => $item->deliveryOrder->originDepot->name ?? '-',
+                'kota_tujuan' => $item->deliveryOrder->destinationCity->name ?? '-',
+                'is_carryover' => (bool) $item->is_carryover,
+            ]);
+        return response()->json($items);
+    }
+
+    // Halaman Optimasi & Hasil PSO
+    public function results()
+    {
+        return view('pso.results');
+    }
+
+    // Jalankan Python PSO
     public function run(Request $request)
     {
-        $itemIds = $request->input('item_ids', []);
+        // 1. Gather items from DB (Sekarang memakai relasi yang benar: item -> deliveryOrder)
+        $dbItems = Item::where('status', 'menunggu')
+            ->whereHas('deliveryOrder', fn($q) => $q->whereDate('order_date', Carbon::today())->where('status', 'pending'))
+            ->with('deliveryOrder.originDepot', 'deliveryOrder.destinationCity')
+            ->get();
 
-        // 1. Ambil items yang status ordernya 'pending' hari ini
-        $orders = DeliveryOrder::whereDate('order_date', Carbon::today())
-                    ->where('status', 'pending')
-                    ->whereIn('item_id', $itemIds)
-                    ->with(['item', 'originDepot', 'destinationCity'])
-                    ->get();
-
-        if ($orders->isEmpty()) {
-            return response()->json(['error' => 'Tidak ada pesanan pending yang dipilih'], 400);
-        }
-
-        // 2. Susun data mentah untuk dikirim ke Python
         $rawItems = [];
-        foreach ($orders as $order) {
+        foreach ($dbItems as $item) {
             $rawItems[] = [
-                'id'            => $order->item->id,
-                'nama'          => $order->item->name,
-                'panjang'       => (float) $order->item->length_cm,
-                'lebar'         => (float) $order->item->width_cm,
-                'tinggi'        => (float) $order->item->height_cm,
-                'berat_fisik'   => (float) $order->item->weight_kg,
-                'kota_asal'     => $order->originDepot->name,
-                'kota_tujuan'   => $order->destinationCity->name,
-                'is_carryover'  => (bool) $order->item->is_carryover,
+                'id' => $item->id,
+                'nama' => $item->name,
+                'panjang' => (float) $item->length_cm,
+                'lebar' => (float) $item->width_cm,
+                'tinggi' => (float) $item->height_cm,
+                'berat_fisik' => (float) $item->weight_kg,
+                'kota_asal' => $item->deliveryOrder->originDepot->name ?? 'Unknown',
+                'kota_tujuan' => $item->deliveryOrder->destinationCity->name ?? 'Unknown',
+                'is_carryover' => (bool) $item->is_carryover,
             ];
         }
 
-        // 3. Ambil data Truk Aktif
-        $trucksData = Truck::where('is_active', true)->with('homeDepot')->get()->map(function($t) {
-            return [
-                'id' => $t->id,
-                'plate_number' => $t->plate_number,
-                'max_weight_kg' => (float) $t->max_weight_kg,
-                'box_p' => (float) $t->length_cm,
-                'box_l' => (float) $t->width_cm,
-                'box_t' => (float) $t->height_cm,
-                'depot_asal' => $t->homeDepot->name,
-            ];
-        })->toArray();
+        if (empty($rawItems)) return response()->json(['error' => 'Tidak ada pesanan pending hari ini'], 400);
 
-        // 4. Bangun Graph Jalan (Sama seperti konsep sebelumnya)
+        // 2. Gather Trucks
+        $trucksData = Truck::where('is_active', true)->with('homeDepot')->get()->map(fn($t) => [
+            'id' => $t->id,
+            'plate_number' => $t->plate_number,
+            'max_weight_kg' => (float) $t->max_weight_kg,
+            'box_p' => (float) $t->length_cm,
+            'box_l' => (float) $t->width_cm,
+            'box_t' => (float) $t->height_cm,
+            'depot_asal' => $t->homeDepot->name ?? 'Unknown',
+        ])->toArray();
+
+        // 3. Build Graph
         $cities = City::where('is_active', true)->pluck('name')->toArray();
         $cityIdx = array_flip($cities);
+        $coords = City::where('is_active', true)->get()->mapWithKeys(fn($c) => [$c->name => [(float) $c->latitude, (float) $c->longitude]])->toArray();
         
-        $coordsRaw = City::where('is_active', true)->get();
-        $coords = [];
-        foreach ($coordsRaw as $c) {
-            $coords[$c->name] = [(float) $c->latitude, (float) $c->longitude];
-        }
-
         $n = count($cities);
         $adj = array_fill(0, $n, array_fill(0, $n, float('inf')));
-        for ($i=0; $i < $n; $i++) $adj[$i][$i] = 0.0;
+        for ($i=0; $i<$n; $i++) $adj[$i][$i] = 0.0;
         
-        $distances = DB::table('depot_distances')->get();
-        foreach ($distances as $d) {
-            $i = array_search($cities[$d->city_a_id - 1] ?? '', $cities); // asumsi ID urut, lebih aman pakai query join jika tidak
-            // Lebih aman cari berdasarkan nama kota dari relasi:
-            $cityA = City::find($d->city_a_id)->name ?? null;
-            $cityB = City::find($d->city_b_id)->name ?? null;
-            if($cityA && $cityB) {
-                $i = $cityIdx[$cityA];
-                $j = $cityIdx[$cityB];
-                $adj[$i][$j] = (float) $d->distance_km;
-                $adj[$j][$i] = (float) $d->distance_km;
+        foreach (DB::table('depot_distances')->get() as $d) {
+            $cA = City::find($d->city_a_id)->name ?? null;
+            $cB = City::find($d->city_b_id)->name ?? null;
+            if ($cA && $cB && isset($cityIdx[$cA]) && isset($cityIdx[$cB])) {
+                $adj[$cityIdx[$cA]][$cityIdx[$cB]] = (float) $d->distance_km;
             }
         }
-
         $depotNames = City::where('is_depot', 1)->pluck('name')->toArray();
 
-        // 5. Ambil Settings
+        // 4. Settings
         $psoSettings = Setting::where('param_group', 'pso')->pluck('param_value', 'param_key')->toArray();
         $opSettings = Setting::where('param_group', 'operasional')->pluck('param_value', 'param_key')->toArray();
 
-        // 6. Kumpulkan Payload
-        $payload = [
-            'items' => $rawItems,
-            'trucks' => $trucksData,
-            'graph' => [
-                'cities' => $cities,
-                'adj' => $adj,
-                'coords' => $coords,
-                'depot_names' => $depotNames
-            ],
-            'pso_params' => $psoSettings,
-            'op_params' => $opSettings
-        ];
+        // 5. Execute Python
+        $payload = json_encode([
+            'items' => $rawItems, 'trucks' => $trucksData,
+            'graph' => ['cities' => $cities, 'adj' => $adj, 'coords' => $coords, 'depot_names' => $depotNames],
+            'pso_params' => $psoSettings, 'op_params' => $opSettings
+        ]);
 
-        // 7. Eksekusi Python
-        $pythonPath = "C:/laragon/bin/python/python.exe"; // Path kamu
-        $scriptPath = base_path('engine/run_pso.py'); 
-
-        $command = escapeshellcmd("$pythonPath $scriptPath " . escapeshellarg(json_encode($payload)));
+        $pythonPath = "C:/laragon/bin/python/python.exe";
+        $command = escapeshellcmd("$pythonPath " . base_path('engine/run_pso.py') . " " . escapeshellarg($payload));
         $output = shell_exec($command . " 2>&1");
 
         $result = json_decode($output, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return response()->json(['error' => 'Python Error: ' . $output], 500);
-        }
+        if (json_last_error() !== JSON_ERROR_NONE) return response()->json(['error' => 'Python Error: ' . $output], 500);
 
         session(['hasil_pso_temp' => $result]);
         return response()->json($result);
     }
 
-    /**
-     * Simpan Hasil Optimasi ke Database
-     */
+    // Simpan ke DB
     public function save(Request $request)
     {
         $hasil = session('hasil_pso_temp');
-        if (!$hasil) {
-            return redirect()->back()->withErrors('Tidak ada hasil optimasi untuk disimpan.');
-        }
-
+        if (!$hasil) return redirect()->back()->withErrors('Tidak ada hasil optimasi.');
+        
         DB::beginTransaction();
         try {
             $today = Carbon::today();
-
-            // 1. Simpan hasil per truk (SimulationResult)
-            foreach ($hasil['best_routes'] as $truckId => $routeData) {
+            foreach ($hasil['best_routes'] as $truckId => $ri) {
                 SimulationResult::create([
-                    'run_date' => $today,
-                    'truck_id' => $truckId,
-                    'route_json' => json_encode($routeData['rute']),
-                    'items_json' => json_encode($routeData['items']),
-                    'total_weight_kg' => $routeData['berat_muatan'],
-                    'tariff_total' => $routeData['tarif'],
-                    'fuel_cost' => $routeData['biaya_bbm'],
-                    'net_profit' => $routeData['tarif'] - $routeData['biaya_bbm'],
-                    'gbest_curve_json' => json_encode($hasil['gbest_curve']),
+                    'run_date' => $today, 'truck_id' => $truckId,
+                    'route_json' => ['rute' => $ri['rute']], 
+                    'total_weight_kg' => $ri['berat_muatan'],
+                    'tariff_total' => $ri['tarif'], 'fuel_cost' => $ri['biaya_bbm'],
+                    'net_profit' => $ri['tarif'] - $ri['biaya_bbm'],
+                    'gbest_curve_json' => $hasil['gbest_curve'],
                 ]);
-
-                // Update status item jadi "terkirim"
-                foreach ($routeData['items'] as $item) {
-                    Item::where('id', $item['id'])->update(['status' => 'terkirim']);
+                // Update status item jadi terkirim
+                foreach ($ri['items'] as $it) {
+                    Item::where('id', $it['id'])->update(['status' => 'terkirim']);
                 }
             }
-
-            // 2. Simpan Carry Over
-            if (isset($hasil['carryover_items'])) {
-                foreach ($hasil['carryover_items'] as $coItem) {
-                    Item::where('id', $coItem['id'])->update(['status' => 'carryover']);
-                    CarryoverItem::create([
-                        'item_id' => $coItem['id'],
-                        'carryover_date' => $today,
-                        'reason' => $coItem['alasan_carryover'] ?? 'guillotine_gagal',
-                        'resolved' => false
-                    ]);
-                }
-            }
-
-            // 3. Simpan Relokasi Truk
-            if (isset($hasil['relokasi'])) {
-                foreach ($hasil['relokasi'] as $relok) {
-                    // Logic serupa dengan streamlit mu...
-                }
-            }
-
-            // 4. Update posisi truk saat ini
-            if (isset($hasil['truck_akhir'])) {
-                foreach ($hasil['truck_akhir'] as $truckId => $kotaNama) {
-                    $kota = City::where('name', $kotaNama)->first();
-                    if ($kota) {
-                        Truck::where('id', $truckId)->update(['current_city_id' => $kota->id]);
-                    }
-                }
-            }
-
+            // Update status order jadi selesai (opsional)
+            DeliveryOrder::whereDate('order_date', $today)->update(['status' => 'selesai']);
+            
             DB::commit();
             session()->forget('hasil_pso_temp');
-            
-            return redirect()->route('pso.results')->with('success', 'Hasil optimasi berhasil disimpan!');
-
+            return redirect()->route('pso.results')->with('success', 'Hasil optimasi tersimpan!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withErrors('Gagal menyimpan: ' . $e->getMessage());
+            return redirect()->back()->withErrors('Gagal simpan: ' . $e->getMessage());
         }
     }
 }
-=======
-// app/Http/Controllers/PsoController.php
-// POLA 3: Controller yang me-render halaman Streamlit embed via iFrame.
-// Setiap method = satu halaman Streamlit yang di-embed.
-
-namespace App\Http\Controllers;
-
-class PsoController extends Controller
-{
-    // Base URL Streamlit (dari .env)
-    private function streamlitUrl(string $page = ''): string
-    {
-        $base = config('services.streamlit.public_url', 'http://localhost:8501');
-        return $page ? "{$base}/{$page}" : $base;
-    }
-
-    /**
-     * Input Pesanan → embed halaman 3_Input_Pesanan.py Streamlit
-     */
-    public function orders()
-    {
-        return view('pso.embed', [
-            'pageTitle'    => 'Input Pesanan',
-            'streamlitUrl' => $this->streamlitUrl('3_Input_Pesanan'),
-        ]);
-    }
-
-    /**
-     * Jalankan PSO → embed halaman 5_Optimasi.py Streamlit
-     */
-    public function run()
-    {
-        return view('pso.embed', [
-            'pageTitle'    => 'Jalankan Optimasi PSO',
-            'streamlitUrl' => $this->streamlitUrl('5_Optimasi'),
-        ]);
-    }
-
-    /**
-     * Hasil & Peta → embed halaman 6_Hasil.py Streamlit
-     */
-    public function results()
-    {
-        return view('pso.embed', [
-            'pageTitle'    => 'Hasil Optimasi & Peta',
-            'streamlitUrl' => $this->streamlitUrl('6_Hasil'),
-        ]);
-    }
-
-    public function items()
-    {
-    return view('pso.embed', [
-        'pageTitle'    => 'Database Barang',
-        'streamlitUrl' => $this->streamlitUrl('3_Database_Barang'),
-    ]);
-    }
-}
->>>>>>> 62cbe3512ac8453c2ea1b65a22f2d646ced020e6
