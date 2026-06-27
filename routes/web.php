@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ── PSO Engine (Embed Streamlit) ─────────────────────────
     Route::get('/pso/orders',  [PsoController::class, 'orders'])->name('pso.orders');
+    Route::get('/pso/items', [PsoController::class, 'items'])->name('pso.items');
     Route::get('/pso/run',     [PsoController::class, 'run'])->name('pso.run');
     Route::get('/pso/results', [PsoController::class, 'results'])->name('pso.results');
 

@@ -46,4 +46,12 @@ class PsoController extends Controller
             'streamlitUrl' => $this->streamlitUrl('6_Hasil'),
         ]);
     }
+
+    public function items()
+    {
+    return view('pso.embed', [
+        'pageTitle'    => 'Database Barang',
+        'streamlitUrl' => $this->streamlitUrl('3_Database_Barang'),
+    ]);
+    }
 }
