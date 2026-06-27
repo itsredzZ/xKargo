@@ -13,11 +13,30 @@ return new class extends Migration
     {
         Schema::create('carryover_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('delivery_order_id')->constrained('delivery_orders')->onDelete('cascade');
-            
-            $table->string('reason'); // contoh: 'overflow_weight', 'overflow_volume', 'packing_failed'
+
+            // Tetap gunakan DO id agar tahu rute asal-tujuan pesanan ini
+            $table->foreignId('item_id')->constrained('items')->onDelete('cascade');
+
+            $table->foreignId('order_id')
+                ->constrained('delivery_orders')
+                ->onDelete('cascade');
+
+            // Dari revisi sebelumnya: untuk parsial muatan
+            $table->integer('quantity')->default(1);
+
+            // Dari SQL Anda: Menggunakan ENUM agar data rapi & konsisten
+            $table->enum('reason', [
+                'overflow_berat',
+                'overflow_volume',
+                'guillotine_gagal',
+                'depot_tanpa_truk'
+            ]);
+
             $table->date('carryover_date');
-            
+
+            // Dari SQL Anda: Penanda apakah carryover ini sudah diangkut di hari berikutnya
+            $table->boolean('resolved')->default(false);
+
             $table->timestamps();
         });
     }

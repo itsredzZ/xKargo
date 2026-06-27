@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('depot_distances', function (Blueprint $table) {
             $table->id();
-            
-            // Foreign Keys untuk menghubungkan dua kota
+
             $table->foreignId('city_a_id')->constrained('cities')->onDelete('cascade');
             $table->foreignId('city_b_id')->constrained('cities')->onDelete('cascade');
-            
+
             $table->decimal('distance_km', 10, 2);
-            // Saya tambahkan duration_minutes opsional berjaga-jaga jika diperlukan OSRM API nantinya
-            $table->integer('duration_minutes')->nullable(); 
-            
+            $table->integer('duration_minutes')->nullable();
+
             $table->timestamps();
+
+            // REVISI: Mencegah adanya rute ganda untuk pasangan kota yang sama
+            $table->unique(['city_a_id', 'city_b_id']);
         });
     }
 

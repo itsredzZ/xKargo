@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username')->unique();      // Sesuai dengan getAuthIdentifierName()
-            $table->string('password_hash');           // Sesuai dengan $fillable temanmu
-            $table->string('role')->default('operator'); // Sesuai dengan $fillable temanmu
+
+            // PERTAHANKAN DARI LARAVEL: Pastikan username tidak ada yang kembar
+            $table->string('username')->unique();
+
+            $table->string('password_hash');
+
+            // REVISI DARI SQL: Gunakan enum agar role dibatasi hanya 'admin' atau 'operator'
+            $table->enum('role', ['admin', 'operator'])->default('admin');
+
             $table->timestamps();
         });
 

@@ -12,12 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('settings', function (Blueprint $table) {
-        $table->id();
-        $table->string('param_group');
-        $table->string('param_key');
-        $table->text('param_value')->nullable();
-        $table->timestamps();
-    });
+            $table->id();
+
+            // Kelompok parameter: 'pso' atau 'operasional'
+            $table->enum('param_group', ['pso', 'operasional']);
+
+            // Nama parameter, unik dalam satu grup (lihat unique di bawah)
+            $table->string('param_key');
+
+            // Nilai parameter — text agar fleksibel (angka desimal, string panjang, dsb.)
+            $table->text('param_value')->nullable();
+
+            $table->timestamps();
+
+            // Constraint gabungan: satu param_key hanya boleh muncul sekali per grup.
+            // Contoh valid  : ('pso','n_partikel') DAN ('operasional','n_partikel') → boleh
+            // Contoh ditolak: ('pso','n_partikel') DAN ('pso','n_partikel')         → error
+            $table->unique(['param_group', 'param_key'], 'uq_settings_group_key');
+        });
     }
 
     /**
