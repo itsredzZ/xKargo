@@ -1,51 +1,52 @@
 """
 engine/graph_builder.py
 =========================
-Pengganti load_adjacency_matrix(filepath_csv) dari kode asli.
-Membangun adjacency matrix, city_idx, dan koordinat kota LANGSUNG dari
-database (tabel `cities` + `depot_distances`), bukan dari file CSV.
-
-Ini yang membuat halaman Master Data > Kota & Jaringan Jalan (Matrix
-Editor) operator betul-betul mempengaruhi hasil A*, bukan cuma tampilan.
+Versi Laravel: membangun graph dari data JSON yang dikirim PHP,
+bukan dari database langsung.
 """
 
-from db.models import City, DepotDistance
-
-
-def build_graph_from_db(session):
+def build_graph_from_db(session=None):
     """
+    Versi lama — tidak dipakai di Laravel.
+    Dibiarkan agar tidak error saat diimport.
+    """
+    raise NotImplementedError("Gunakan build_graph_from_json() untuk Laravel.")
+
+
+def build_graph_from_json(graph_data: dict):
+    """
+    Membangun graph dari dict yang dikirim PsoController Laravel.
+    
+    Parameter:
+        graph_data: {
+            'cities': [...],
+            'adj': [[...]],
+            'coords': {...},
+            'depot_names': [...]
+        }
+    
     Mengembalikan:
-      cities      : list nama kota (urutan tetap, dipakai sebagai index)
-      city_idx    : dict nama_kota -> index
-      adj         : adjacency matrix (list of list), inf jika tidak ada data jarak
-      coords      : dict nama_kota -> (latitude, longitude)  -> heuristik A*
-      depot_names : list nama kota yang is_depot=True dan is_active=True
+        cities, city_idx, adj, coords, depot_names
     """
-    city_rows = session.query(City).filter_by(is_active=True).all()
+    cities      = graph_data.get('cities', [])
+    adj         = graph_data.get('adj', [])
+    coords      = graph_data.get('coords', {})
+    depot_names = graph_data.get('depot_names', [])
 
-    cities = [c.name for c in city_rows]
     city_idx = {name: i for i, name in enumerate(cities)}
-    coords = {c.name: (float(c.latitude), float(c.longitude)) for c in city_rows}
-    depot_names = [c.name for c in city_rows if c.is_depot]
 
+    # Ganti None/null dengan float('inf')
     n = len(cities)
-    adj = [[float("inf")] * n for _ in range(n)]
+    clean_adj = [[float('inf')] * n for _ in range(n)]
     for i in range(n):
-        adj[i][i] = 0.0
+        for j in range(n):
+            val = adj[i][j] if adj and i < len(adj) and j < len(adj[i]) else float('inf')
+            if val is None or val != val:  # None atau NaN
+                clean_adj[i][j] = float('inf')
+            else:
+                try:
+                    clean_adj[i][j] = float(val)
+                except (TypeError, ValueError):
+                    clean_adj[i][j] = float('inf')
 
-    id_to_name = {c.id: c.name for c in city_rows}
-
-    dist_rows = session.query(DepotDistance).all()
-    for d in dist_rows:
-        name_a = id_to_name.get(d.city_a_id)
-        name_b = id_to_name.get(d.city_b_id)
-        if name_a is None or name_b is None:
-            continue  # kota tidak aktif / tidak ditemukan -> skip
-        if name_a not in city_idx or name_b not in city_idx:
-            continue
-        i, j = city_idx[name_a], city_idx[name_b]
-        dist_km = float(d.distance_km)
-        adj[i][j] = dist_km
-        adj[j][i] = dist_km
-
-    return cities, city_idx, adj, coords, depot_names
+    return cities, city_idx, clean_adj, coords, depot_names

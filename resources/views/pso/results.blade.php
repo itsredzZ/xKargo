@@ -57,33 +57,41 @@ let psoData = null, chartConv = null, chartVel = null, petaRute = null;
 async function runPSO() {
     const btn = document.getElementById('btn-run');
     btn.classList.add('btn-loading');
-    document.getElementById('status-text').innerText = "Sedang memanggil Python PSO...";
-    
-    // [FIX] Mengambil token langsung dari Blade, JANGAN pakai document.querySelector
     const csrfToken = '{{ csrf_token() }}';
+    
+    let dotCount = 0;
+    const loadingText = "Sedang memanggil Python PSO";
+    const interval = setInterval(() => {
+        dotCount = (dotCount + 1) % 4;
+        document.getElementById('status-text').innerText = loadingText + ".".repeat(dotCount);
+    }, 400);
 
     try {
         const res = await fetch('{{ route("pso.run") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            }
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }
         });
-        
         const data = await res.json();
         
-        if(res.ok) { 
-            psoData = data; 
-            renderAll(data); 
-        } else { 
-            alert('Error: ' + (data.error || 'Unknown')); 
-            document.getElementById('status-text').innerText = "Gagal menjalankan PSO."; 
-            btn.classList.remove('btn-loading'); 
+        clearInterval(interval);
+        
+        if (!res.ok || data.error) { 
+            alert('Error dari Python:\n\n' + (data.error || 'Unknown error') + (data.trace ? '\n\nTraceback:\n' : ''));
+            document.getElementById('status-text').innerText = "Gagal menjalankan PSO.";
+            return;
         }
+
+        psoData = data; 
+        renderAll(data); 
+        
+        // [FIX] Menggunakan `data` (bukan `d`, karena `d` hanya ada di dalam fungsi renderAll)
+        document.getElementById('status-text').innerText = "PSO Selesai! Profit terbaik: Rp " + ((data.total_tarif || 0)).toLocaleString('id-ID');
     } catch(e) { 
-        alert('Gagal menghubungi server: ' + e.message); 
-        btn.classList.remove('btn-loading'); 
+        clearInterval(interval);
+        alert('Error di JavaScript:\n\n' + e.message);
+        document.getElementById('status-text').innerText = "Gagal memproses hasil.";
+    } finally { 
+        btn.classList.remove('btn-loading');
     }
 }
 
@@ -92,47 +100,78 @@ function renderAll(d) {
     const btn = document.getElementById('btn-run'); 
     btn.innerText = "✅ Optimasi Selesai"; 
     btn.classList.add('bg-green-600','hover:bg-green-700'); 
-    btn.classList.remove('bg-violet-600');
+    btn.classList.remove('bg-violet-600'); 
     
-    // 1. Charts Konvergensi
+    // 1. Konvergensi Chart
     if(chartConv) chartConv.destroy();
     chartConv = new Chart(document.getElementById('chartConv'), {
         type: 'line',
         data: {
             labels: d.gbest_curve.map((_, i) => i),
             datasets: [{
-                label: 'Gbest Profit',
+                label: 'Gbest Profit (Rp)',
                 data: d.gbest_curve,
                 borderColor: '#7c3aed',
                 fill: true,
-                backgroundColor: 'rgba(124,58,237,0.1)',
-                tension: 0.3
+                backgroundColor: 'rgba(124,58,237,0.15)',
+                borderWidth: 2,
+                pointBackgroundColor: '#7c3aed',
+                pointRadius: 2,
+                tension: 0.4
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: false, 
+            maintainAspectRatio: false, 
+            scales: { 
+                y: { 
+                    beginAtZero: false, 
+                    ticks: { 
+                        callback: function(val) { 
+                            return 'Rp ' + (val/1000000).toFixed(0) + ' Jt'; 
+                        } 
+                    } 
+                } 
+            }
+        }
     });
     
-    // 2. Chart Velocity
-    const velData = d.velocity_breakdown;
-    document.getElementById('iterSlider').max = velData.length - 1;
+    // 2. Velocity Chart
+    const velData = d.velocity_breakdown || [];
+    document.getElementById('iterSlider').max = Math.max(0, velData.length - 1);
     
     function drawVel(i) { 
         if(chartVel) chartVel.destroy(); 
-        const v = velData[i]; 
+        
+        const v = velData[i] || {};
+        
         chartVel = new Chart(document.getElementById('chartVel'), {
             type: 'bar',
             data: {
                 labels: ['Inersia', 'Kognitif', 'Sosial'],
-                datasets: [{ data: [v.inersia, v.kognitif, v.sosial], backgroundColor: ['#3b82f6','#22c55e','#f59e0b'] }]
+                datasets: [{ 
+                    data: [v.inersia || 0, v.kognitif || 0, v.sosial || 0], 
+                    backgroundColor: ['#3b82f6','#22c55e','#f59e0b'],
+                    borderWidth: 1
+                }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: { 
+                responsive: false, 
+                maintainAspectRatio: false,
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        title: { display: 'Kontribusi Rata-rata' } 
+                    } 
+                }
+            }
         }); 
     }
     
     document.getElementById('iterSlider').oninput = e => drawVel(e.target.value); 
     drawVel(0);
 
-    // 3. Map
+    // 3. Peta
     if(petaRute) petaRute.remove();
     petaRute = L.map('peta-rute').setView([-7.6, 112.3], 8);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(petaRute);
@@ -152,31 +191,38 @@ function renderAll(d) {
 
     // 4. Detail Truk
     let html = '';
-    Object.keys(d.best_routes).forEach(tid => {
+    Object.keys(d.best_routes).forEach((tid) => {
         const r = d.best_routes[tid];
-        html += `
-        <details class="bg-white border rounded-xl overflow-hidden">
-            <summary class="p-4 bg-slate-50 cursor-pointer font-bold text-slate-800">
-                🚛 Truk ${tid} | ${r.rute.length} Kota | Rp ${r.tarif.toLocaleString('id-ID')}
-            </summary>
-            <div class="p-4 text-sm text-slate-600">
-                <p class="mb-2"><b>Rute:</b> ${r.depot} → ${r.rute.join(' → ')} → ${r.depot_kembali} (${r.total_dist.toFixed(1)} km)</p>
-                <table class="w-full text-left border-collapse">
-                    <thead class="text-xs text-slate-400 uppercase"><tr><th class="pb-2">Nama</th><th class="pb-2">Tujuan</th><th class="pb-2">Berat</th></tr></thead>
-                    <tbody>
-                        ${r.items.map(i=>`<tr class="border-t border-slate-100"><td class="py-1">${i.nama}</td><td class="py-1">${i.kota_tujuan}</td><td class="py-1">${i.berat_fisik} kg</td></tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </details>`;
+        
+        const rows = r.items.map(function(i) {
+            return '<tr class="border-t border-t border-slate-100">' +
+                   '<td class="py-2 text-slate-800 font-medium">' + i.nama + '</td>' +
+                   '<td class="py-2 text-slate-500">' + i.kota_tujuan + '</td>' +
+                   '<td class="py-2 text-slate-500">' + i.berat_fisik + ' kg</td>' +
+                   '<td class="py-2 text-green-600 font-semibold">Rp ' + (i.tarif || 0).toLocaleString('id-ID') + '</td>' +
+                   '</tr>';
+        }).join('');
+
+        html += '<details class="bg-white border rounded-xl overflow-hidden">' +
+                 '<summary class="p-4 bg-slate-50 cursor-pointer font-bold text-slate-800 hover:bg-slate-100 transition-colors">' +
+                 '🚛 Truk ' + tid + ' | ' + r.rute.length + ' Kota | Rp ' + (r.tarif || 0).toLocaleString('id-ID') +
+                 '</summary>' +
+                 '<div class="p-4 text-sm text-slate-600">' +
+                 '<p class="mb-3"><b>Rute:</b> ' + r.depot + ' → ' + r.rute.join(' → ') + ' → ' + r.depot_kembali + ' (' + r.total_dist.toFixed(1) + ' km)</p>' +
+                 '<table class="w-full text-left border-collapse">' +
+                    '<thead class="text-xs text-slate-400 uppercase"><tr><th class="pb-2">Nama Barang</th><th class="pb-2">Tujuan</th><th class="pb-2">Berat</th><th class="pb-2">Tarif</th></tr></thead>' +
+                    '<tbody>' + rows + '</tbody>' +
+                 '</table>' +
+                 '</div>' +
+                 '</details>';
     });
     document.getElementById('truck-details').innerHTML = html;
 
-    // 5. Summary
-    const fmt = n => `Rp ${n.toLocaleString('id-ID')}`;
+    // 5. Summary Profit
+    const fmt = function(n) { return 'Rp ' + (n || 0).toLocaleString('id-ID'); };
     document.getElementById('sum-tarif').innerText = fmt(d.total_tarif);
     document.getElementById('sum-bbm').innerText = fmt(d.total_bbm);
-    document.getElementById('sum-profit').innerText = fmt(d.total_tarif - d.total_bbm);
+    document.getElementById('sum-profit').innerText = fmt((d.total_tarif || 0) - (d.total_bbm || 0));
 }
 </script>
 
