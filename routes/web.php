@@ -16,7 +16,7 @@ Route::get('/', fn() => redirect()->route('dashboard'));
 require __DIR__.'/auth.php';
 
 // Semua rute di bawah ini HANYA BISA diakses jika sudah Login
-//Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -52,4 +52,11 @@ require __DIR__.'/auth.php';
     Route::get('/profile',        [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',      [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',     [ProfileController::class, 'destroy'])->name('profile.destroy');
-//});
+});
+
+use App\Http\Controllers\RiwayatController;
+
+// Riwayat & Laporan
+Route::get('/riwayat',          [RiwayatController::class, 'index'])->name('riwayat.index');
+Route::get('/riwayat/excel',    [RiwayatController::class, 'exportExcel'])->name('laporan.excel');
+Route::get('/riwayat/pdf',      [RiwayatController::class, 'exportPdf'])->name('laporan.pdf');

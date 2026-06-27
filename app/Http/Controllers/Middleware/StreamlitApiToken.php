@@ -14,7 +14,7 @@
 //   headers = {"Authorization": f"Bearer {os.getenv('LARAVEL_API_TOKEN')}"}
 //   r = requests.get(f"{os.getenv('LARAVEL_API_URL')}/api/trucks", headers=headers)
 
-namespace App\Http\Middleware;
+namespace App\Http\Controllers\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
