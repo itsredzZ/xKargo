@@ -67,6 +67,7 @@ def _build_trucks(raw_trucks):
             box_t=float(t['box_t']),
             home_depot=t['depot_asal'],
             current_city=t['depot_asal'],
+            tarif_per_km=float(t.get('tarif_per_km', 10000)),  # ← tambah ini
         ))
     return trucks
 
@@ -176,7 +177,7 @@ def main():
         
         pso_params = SimpleNamespace(**{k: _cast_num(v) for k, v in {**DEFAULT_PSO, **pso_raw}.items()})
         op_params = SimpleNamespace(**{k: _cast_num(v) for k, v in {**DEFAULT_OP, **op_raw}.items()})
-
+       
         pso_result = run_pso(
             items, trucks, adj, city_idx, cities, coords, depot_names,
             pso_params, op_params,

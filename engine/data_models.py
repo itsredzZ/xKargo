@@ -109,6 +109,8 @@ class TruckState:
     box_t:         float
     home_depot:    str
     current_city:  str
+    tarif_per_km:  float = 10000.0   # ← tambah ini
+
 
     @property
     def box_volume(self) -> float:
@@ -125,4 +127,5 @@ def truck_to_state(truck_row, current_city_name: Optional[str] = None) -> TruckS
         box_t=float(truck_row.height_cm),
         home_depot=truck_row.home_depot.name,
         current_city=current_city_name or truck_row.current_city.name,
+        tarif_per_km=float(getattr(truck_row, 'tarif_per_km', 10000.0)),  # ← tambah ini
     )

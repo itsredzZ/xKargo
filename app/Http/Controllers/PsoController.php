@@ -203,6 +203,7 @@ class PsoController extends Controller
                 'box_l'         => (float) $t->width_cm,
                 'box_t'         => (float) $t->height_cm,
                 'depot_asal'    => $t->homeDepot->name ?? 'Unknown',
+                'tarif_per_km'  => (float) ($t->tarif_per_km ?? 10000), // ← tambah ini
             ])->toArray();
 
             $cities  = City::where('is_active', true)->pluck('name')->toArray();
@@ -212,7 +213,7 @@ class PsoController extends Controller
                 ->toArray();
 
             $n   = count($cities);
-            $adj = array_fill(0, $n, array_fill(0, $n, INF));
+            $adj = array_fill(0, $n, array_fill(0, $n, 999999));  // angka besar, bukan INF
             for ($i = 0; $i < $n; $i++) $adj[$i][$i] = 0.0;
 
             foreach (DB::table('depot_distances')->get() as $d) {

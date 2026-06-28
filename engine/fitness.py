@@ -116,11 +116,7 @@ def evaluate_fitness(particle, items, trucks, adj, city_idx, cities, coords,
         berat_muatan_fisik = sum(it["berat_fisik"] for it in final_items)
         konsumsi_bbm = hitung_konsumsi_bbm(berat_muatan_fisik, op_params.bbm_base, op_params.bbm_faktor)
         biaya_bbm = konsumsi_bbm * final_dist * op_params.harga_solar
-
-        tarif_truck = 0.0
-        for it in final_items:
-            jarak = astar_cached(adj, city_idx, cities, depot, it["kota_tujuan"], coords, cache)
-            tarif_truck += hitung_tarif_per_barang(it, jarak, op_params.tarif_dasar)
+        tarif_truck = final_dist * truck.tarif_per_km   # ← ganti seluruh loop
 
         total_tarif += tarif_truck
         total_bbm += biaya_bbm

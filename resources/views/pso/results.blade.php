@@ -26,11 +26,21 @@
 
     <div id="area-hasil" class="hidden space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-2xl shadow-sm border p-6"><h3 class="text-sm font-bold text-slate-600 mb-3">Grafik Konvergensi</h3><canvas id="chartConv"></canvas></div>
-            <div class="bg-white rounded-2xl shadow-sm border p-6">
-                <div class="flex justify-between items-center mb-3"><h3 class="text-sm font-bold text-slate-600">Velocity Breakdown</h3><input type="range" id="iterSlider" min="0" max="1" value="0" class="w-32 accent-violet-600"></div>
+        <div class="bg-white rounded-2xl shadow-sm border p-6">
+    <h3 class="text-sm font-bold text-slate-600 mb-3">Grafik Konvergensi</h3>
+    <div style="position:relative; height:280px;">
+        <canvas id="chartConv"></canvas>
+    </div>
+    </div>
+        <div class="bg-white rounded-2xl shadow-sm border p-6">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold text-slate-600">Velocity Breakdown</h3>
+                <input type="range" id="iterSlider" min="0" max="1" value="0" class="w-32 accent-violet-600">
+            </div>
+            <div style="position:relative; height:280px;">
                 <canvas id="chartVel"></canvas>
             </div>
+        </div>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border overflow-hidden"><div id="peta-rute"></div></div>
         
@@ -72,6 +82,9 @@ async function runPSO() {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }
         });
         const data = await res.json();
+
+        // ← TAMBAH INI SEMENTARA untuk debug
+        console.log('PSO Output:', JSON.stringify(data, null, 2));
         
         clearInterval(interval);
         
@@ -121,7 +134,7 @@ function renderAll(d) {
             }]
         },
         options: { 
-            responsive: false, 
+            responsive: true, 
             maintainAspectRatio: false, 
             scales: { 
                 y: { 
@@ -150,13 +163,14 @@ function renderAll(d) {
             data: {
                 labels: ['Inersia', 'Kognitif', 'Sosial'],
                 datasets: [{ 
+                    label: 'Kontribusi Velocity (Iterasi ' + i + ')',
                     data: [v.inersia || 0, v.kognitif || 0, v.sosial || 0], 
                     backgroundColor: ['#3b82f6','#22c55e','#f59e0b'],
                     borderWidth: 1
                 }]
             },
             options: { 
-                responsive: false, 
+                responsive: true, 
                 maintainAspectRatio: false,
                 scales: { 
                     y: { 
@@ -194,13 +208,18 @@ function renderAll(d) {
     Object.keys(d.best_routes).forEach((tid) => {
         const r = d.best_routes[tid];
         
+        // SESUDAH - proporsional dari tarif truk berdasarkan berat
+        const totalBeratTruk = r.items.reduce((sum, i) => sum + (i.berat_fisik || 0), 0);
         const rows = r.items.map(function(i) {
-            return '<tr class="border-t border-t border-slate-100">' +
-                   '<td class="py-2 text-slate-800 font-medium">' + i.nama + '</td>' +
-                   '<td class="py-2 text-slate-500">' + i.kota_tujuan + '</td>' +
-                   '<td class="py-2 text-slate-500">' + i.berat_fisik + ' kg</td>' +
-                   '<td class="py-2 text-green-600 font-semibold">Rp ' + (i.tarif || 0).toLocaleString('id-ID') + '</td>' +
-                   '</tr>';
+            // Tarif per item dihitung proporsional berdasarkan berat
+            const proporsi = totalBeratTruk > 0 ? (i.berat_fisik / totalBeratTruk) : 0;
+            const tarifItem = Math.round((r.tarif || 0) * proporsi);
+            return '<tr class="border-t border-slate-100">' +
+                '<td class="py-2 text-slate-800 font-medium">' + i.nama + '</td>' +
+                '<td class="py-2 text-slate-500">' + i.kota_tujuan + '</td>' +
+                '<td class="py-2 text-slate-500">' + i.berat_fisik + ' kg</td>' +
+                '<td class="py-2 text-green-600 font-semibold">Rp ' + tarifItem.toLocaleString('id-ID') + '</td>' +
+                '</tr>';
         }).join('');
 
         html += '<details class="bg-white border rounded-xl overflow-hidden">' +
