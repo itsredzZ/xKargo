@@ -114,6 +114,9 @@ function renderAll(d) {
     btn.innerText = "✅ Optimasi Selesai"; 
     btn.classList.add('bg-green-600','hover:bg-green-700'); 
     btn.classList.remove('bg-violet-600'); 
+    btn.disabled = true;              // ← tambahkan ini
+    btn.onclick = null;               // ← dan ini, agar klik tidak bisa trigger apapun
+    btn.classList.add('opacity-50', 'cursor-not-allowed');  // ← visual disabled
     
     // 1. Konvergensi Chart
     if(chartConv) chartConv.destroy();

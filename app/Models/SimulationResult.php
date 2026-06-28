@@ -11,7 +11,7 @@ class SimulationResult extends Model
     protected $table = 'simulation_results';
 
     protected $fillable = [
-        'run_date', 'truck_id',
+        'batch_id','run_date', 'truck_id',
         'route_json', 'total_weight_kg', 'total_volume_m3',
         'tariff_total', 'fuel_cost', 'net_profit',
         'gbest_curve_json',
