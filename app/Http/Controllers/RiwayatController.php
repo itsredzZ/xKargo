@@ -11,7 +11,11 @@ class RiwayatController extends Controller
         $startDate = $request->get('start', now()->subDays(7)->format('Y-m-d'));
         $endDate   = $request->get('end',   now()->format('Y-m-d'));
 
-        $data = SimulationResult::whereBetween('run_date', [$startDate, $endDate])
+        // TAMBAHKAN BARIS DI BAWAH INI:
+        // Ini gunanya merubah "2026-06-29" jadi "2026-06-29 23:59:59"
+        $endDateWithTime = $endDate . ' 23:59:59';
+
+        $data = SimulationResult::whereBetween('run_date', [$startDate, $endDateWithTime])
             ->orderByDesc('run_date')
             ->get();
 
