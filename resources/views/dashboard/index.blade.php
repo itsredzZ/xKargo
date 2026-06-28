@@ -307,7 +307,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap gap-3">
-                <a href="{{ route('pso.items') }}"
+                <a href="{{ route('items.index') }}"
                    class="bg-blue-800/50 hover:bg-blue-600 text-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition border border-blue-500/50 flex items-center gap-1.5">
                     📋 Database Barang
                 </a>

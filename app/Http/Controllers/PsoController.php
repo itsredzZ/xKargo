@@ -29,8 +29,8 @@ class PsoController extends Controller
         return view('pso.orders', compact('depots', 'allCities', 'todayOrders'));
     }
 
-    // Simpan Pesanan Baru
-    public function storeOrder(Request $request)
+    // Simpan Pesanan Baru dari Form Manual
+    public function store(Request $request)
     {
         $request->validate([
             'name'                  => 'required|string',
@@ -64,6 +64,79 @@ class PsoController extends Controller
         return redirect()->route('pso.orders')->with('success', 'Barang berhasil ditambahkan!');
     }
 
+    // Import pesanan dari file Excel
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'excel_file'           => 'required|file|mimes:xlsx,xls,csv|max:2048',
+            'origin_depot_id'      => 'required|exists:cities,id',
+            'destination_city_id'  => 'required|exists:cities,id',
+        ]);
+
+        $file = $request->file('excel_file');
+        $rows = [];
+
+        if (class_exists(\Maatwebsite\Excel\Facades\Excel::class)) {
+            $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file);
+            $sheet = $data[0];
+            foreach (array_slice($sheet, 1) as $row) {
+                if (empty($row[0])) continue;
+                $rows[] = [
+                    'name'      => $row[0],
+                    'weight_kg' => $row[1] ?? 0,
+                    'length_cm' => $row[2] ?? 0,
+                    'width_cm'  => $row[3] ?? 0,
+                    'height_cm' => $row[4] ?? 0,
+                    'quantity'  => $row[5] ?? 1,
+                ];
+            }
+        } else {
+            $csv = array_map('str_getcsv', file($file->getRealPath()));
+            array_shift($csv);
+            foreach ($csv as $row) {
+                if (empty($row[0])) continue;
+                $rows[] = [
+                    'name'      => $row[0],
+                    'weight_kg' => $row[1] ?? 0,
+                    'length_cm' => $row[2] ?? 0,
+                    'width_cm'  => $row[3] ?? 0,
+                    'height_cm' => $row[4] ?? 0,
+                    'quantity'  => $row[5] ?? 1,
+                ];
+            }
+        }
+
+        if (empty($rows)) {
+            return back()->with('error', 'File kosong atau format tidak sesuai.');
+        }
+
+        DB::transaction(function () use ($request, $rows) {
+            $order = DeliveryOrder::create([
+                'order_date'           => Carbon::today(),
+                'origin_depot_id'      => $request->origin_depot_id,
+                'destination_city_id'  => $request->destination_city_id,
+                'source'               => 'excel',
+            ]);
+
+            foreach ($rows as $row) {
+                Item::create([
+                    'order_id'     => $order->id,
+                    'name'         => $row['name'],
+                    'weight_kg'    => $row['weight_kg'],
+                    'length_cm'    => $row['length_cm'],
+                    'width_cm'     => $row['width_cm'],
+                    'height_cm'    => $row['height_cm'],
+                    'quantity'     => $row['quantity'],
+                    'status'       => 'pending',
+                    'is_carryover' => false,
+                ]);
+            }
+        });
+
+        return redirect()->route('pso.orders')
+            ->with('success', count($rows) . ' barang dari Excel berhasil diimport!');
+    }
+
     // Endpoint API untuk ambil data items
     public function items()
     {
@@ -94,12 +167,10 @@ class PsoController extends Controller
     public function run(Request $request)
     {
         try {
-            // Cek shell_exec tersedia
             if (!function_exists('shell_exec')) {
                 return response()->json(['error' => 'shell_exec tidak tersedia di PHP ini'], 500);
             }
 
-            // Gather items
             $dbItems = Item::where('status', 'menunggu')
                 ->whereHas('deliveryOrder', fn($q) => $q->whereDate('order_date', Carbon::today())->where('status', 'pending'))
                 ->with('deliveryOrder.originDepot', 'deliveryOrder.destinationCity')
@@ -124,7 +195,6 @@ class PsoController extends Controller
                 return response()->json(['error' => 'Tidak ada pesanan pending hari ini'], 400);
             }
 
-            // Gather Trucks
             $trucksData = Truck::where('is_active', true)->with('homeDepot')->get()->map(fn($t) => [
                 'id'            => $t->id,
                 'plate_number'  => $t->plate_number,
@@ -135,7 +205,6 @@ class PsoController extends Controller
                 'depot_asal'    => $t->homeDepot->name ?? 'Unknown',
             ])->toArray();
 
-            // Build Graph
             $cities  = City::where('is_active', true)->pluck('name')->toArray();
             $cityIdx = array_flip($cities);
             $coords  = City::where('is_active', true)->get()
@@ -166,28 +235,23 @@ class PsoController extends Controller
                 'op_params'  => $opSettings,
             ]);
 
-            // Cek file Python ada
             $enginePath = base_path('engine/run_pso.py');
             if (!file_exists($enginePath)) {
                 return response()->json(['error' => "File Python tidak ditemukan: $enginePath"], 500);
             }
 
-            // Cari Python
             $pythonPath = "D:\\Program\\Laragon\\bin\\python\\python-3.10\\python.exe";
             if (!file_exists($pythonPath)) {
                 $pythonPath = "python";
             }
 
-            // Tulis payload ke file sementara
             $tempFile = tempnam(sys_get_temp_dir(), 'pso_') . '.json';
             file_put_contents($tempFile, $payload);
 
-            // Jalankan Python dengan PYTHONPATH
             $projectPath = base_path();
             $command = "set \"PYTHONPATH={$projectPath}\" && \"{$pythonPath}\" \"{$enginePath}\" \"{$tempFile}\"";
             $output  = shell_exec($command . ' 2>&1');
 
-            // Debug: kembalikan output mentah kalau bukan JSON valid
             $result = json_decode($output, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return response()->json([

@@ -38,7 +38,7 @@
                 Master Data Truk
             </a>
 
-            <a href="{{ route('pso.items') }}"
+            <a href="{{ route('items.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition {{ request()->routeIs('pso.items') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                 Database Barang
             </a>

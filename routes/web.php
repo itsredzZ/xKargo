@@ -8,6 +8,7 @@ use App\Http\Controllers\DepotWebController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RiwayatController;
+use App\Http\Controllers\ItemWebController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,8 @@ require __DIR__.'/auth.php';
 
 // ── PSO Engine (Laravel + Python Hybrid) ─────────────────────────
     Route::get('/pso/orders', [PsoController::class, 'orders'])->name('pso.orders');
+    Route::post('/pso/orders', [PsoController::class, 'store'])->name('pso.orders.store');      // ← tambah ini
+    Route::post('/pso/orders/import', [PsoController::class, 'importExcel'])->name('pso.orders.import');  // ← untuk excel
     Route::get('/pso/items', [PsoController::class, 'items'])->name('pso.items');
     Route::get('/pso/results', [PsoController::class, 'results'])->name('pso.results');
     Route::post('/pso/run', [PsoController::class, 'run'])->name('pso.run');
@@ -93,3 +96,8 @@ Route::post('/pso/debug', function(\Illuminate\Http\Request $request) {
         return response()->json(['exception' => $e->getMessage(), 'line' => $e->getLine()]);
     }
 });
+
+// Route untuk Database Barang (Hanya Index, Edit, Update - Tidak ada Create)
+Route::get('/items', [ItemWebController::class, 'index'])->name('items.index');
+Route::get('/items/{id}/edit', [ItemWebController::class, 'edit'])->name('items.edit');
+Route::put('/items/{id}', [ItemWebController::class, 'update'])->name('items.update');

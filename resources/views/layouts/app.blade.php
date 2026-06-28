@@ -139,7 +139,7 @@
                 </a>
 
                 {{-- PERBAIKAN 3: Memasukkan menu Database Barang (Tugas Chelsea) --}}
-                <a href="{{ route('pso.items') }}"
+                <a href="{{ route('items.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.items') ? 'active' : '' }}">
                     📋 <span>Database Barang</span>
                 </a>
