@@ -46,11 +46,11 @@ class RiwayatController extends Controller
             fputcsv($handle, ['Tanggal', 'Truk ID', 'Total Tarif (Rp)', 'Biaya BBM (Rp)', 'Profit Bersih (Rp)']);
             foreach ($data as $row) {
                 fputcsv($handle, [
-                    $row->run_date,
-                    $row->truck_id,
-                    $row->tariff_total,
-                    $row->fuel_cost,
-                    $row->net_profit,
+                    \Carbon\Carbon::parse($row->run_date)->format('d/m/Y'), // ← fix format
+                    'Truk #' . $row->truck_id,
+                    number_format($row->tariff_total, 0, ',', '.'),
+                    number_format($row->fuel_cost, 0, ',', '.'),
+                    number_format($row->net_profit, 0, ',', '.'),
                 ]);
             }
             fclose($handle);
@@ -63,17 +63,20 @@ class RiwayatController extends Controller
     {
         $startDate = $request->get('start', now()->subDays(7)->format('Y-m-d'));
         $endDate   = $request->get('end',   now()->format('Y-m-d'));
-    
+
         $data = SimulationResult::whereBetween('run_date', [$startDate, $endDate])
             ->orderByDesc('run_date')
             ->get();
-    
+
         $totalProfit = $data->sum('net_profit');
-    
+        $totalTarif  = $data->sum('tariff_total');
+        $totalBbm    = $data->sum('fuel_cost');
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('riwayat.pdf', compact(
-            'data', 'startDate', 'endDate', 'totalProfit'
-        ));
-    
+            'data', 'startDate', 'endDate',
+            'totalProfit', 'totalTarif', 'totalBbm'  // ← tambah totalTarif & totalBbm
+        ))->setPaper('a4', 'landscape');  // ← landscape agar tabel tidak terpotong
+
         return $pdf->download("laporan_{$startDate}_{$endDate}.pdf");
     }
 }

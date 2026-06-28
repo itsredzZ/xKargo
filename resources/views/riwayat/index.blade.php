@@ -68,7 +68,7 @@
             <tbody>
                 @forelse($data as $row)
                 <tr class="border-t hover:bg-gray-50 transition">
-                    <td class="px-4 py-3">{{ $row->run_date }}</td>
+                    <td class="px-4 py-3">{{ \Carbon\Carbon::parse($row->run_date)->format('Y-m-d') }}</td>
                     <td class="px-4 py-3">Truk #{{ $row->truck_id }}</td>
                     <td class="px-4 py-3 text-right">Rp {{ number_format($row->tariff_total, 0, ',', '.') }}</td>
                     <td class="px-4 py-3 text-right">Rp {{ number_format($row->fuel_cost, 0, ',', '.') }}</td>

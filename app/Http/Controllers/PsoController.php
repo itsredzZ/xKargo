@@ -214,30 +214,37 @@ class PsoController extends Controller
     {
         $hasil = session('hasil_pso_temp');
         if (!$hasil) return redirect()->back()->withErrors('Tidak ada hasil optimasi.');
-
+    
         DB::beginTransaction();
         try {
-            $today = Carbon::today();
+            $today   = Carbon::today();
+            $batchId = 'PSO-' . $today->format('Ymd') . '-' . time(); // ← tambah batch_id
+    
             foreach ($hasil['best_routes'] as $truckId => $ri) {
                 SimulationResult::create([
+                    'batch_id'          => $batchId,           // ← tambah ini
                     'run_date'          => $today,
                     'truck_id'          => $truckId,
-                    'route_json'        => ['rute' => $ri['rute']],
-                    'total_weight_kg'   => $ri['berat_muatan'],
-                    'tariff_total'      => $ri['tarif'],
-                    'fuel_cost'         => $ri['biaya_bbm'],
-                    'net_profit'        => $ri['tarif'] - $ri['biaya_bbm'],
-                    'gbest_curve_json'  => $hasil['gbest_curve'],
+                    'route_json'        => ['rute' => $ri['rute'] ?? []],
+                    'total_weight_kg'   => $ri['berat_muatan'] ?? 0,
+                    'total_volume_m3'   => $ri['volume_m3'] ?? 0,  // ← tambah ini
+                    'tariff_total'      => $ri['tarif'] ?? 0,
+                    'fuel_cost'         => $ri['biaya_bbm'] ?? 0,
+                    'net_profit'        => ($ri['tarif'] ?? 0) - ($ri['biaya_bbm'] ?? 0),
+                    'gbest_curve_json'  => $hasil['gbest_curve'] ?? [],
                 ]);
-                foreach ($ri['items'] as $it) {
+    
+                foreach ($ri['items'] ?? [] as $it) {
                     Item::where('id', $it['id'])->update(['status' => 'terkirim']);
                 }
             }
+    
             DeliveryOrder::whereDate('order_date', $today)->update(['status' => 'selesai']);
-
+    
             DB::commit();
             session()->forget('hasil_pso_temp');
             return redirect()->route('pso.results')->with('success', 'Hasil optimasi tersimpan!');
+    
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withErrors('Gagal simpan: ' . $e->getMessage());
