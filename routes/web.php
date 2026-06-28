@@ -7,6 +7,8 @@ use App\Http\Controllers\TruckWebController;
 use App\Http\Controllers\DepotWebController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RiwayatController;
+
 use Illuminate\Support\Facades\Route;
 
 // Redirect root ke dashboard
@@ -15,17 +17,18 @@ Route::get('/', fn() => redirect()->route('dashboard'));
 // Include rute Auth bawaan Breeze (Login, Register, Password Reset)
 require __DIR__.'/auth.php';
 
-// Semua rute di bawah ini HANYA BISA diakses jika sudah Login
-Route::middleware(['auth', 'verified'])->group(function () {
+// // Semua rute di bawah ini HANYA BISA diakses jika sudah Login
+// Route::middleware(['auth', 'verified'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // ── PSO Engine (Embed Streamlit) ─────────────────────────
-    Route::get('/pso/orders',  [PsoController::class, 'orders'])->name('pso.orders');
+// ── PSO Engine (Laravel + Python Hybrid) ─────────────────────────
+    Route::get('/pso/orders', [PsoController::class, 'orders'])->name('pso.orders');
     Route::get('/pso/items', [PsoController::class, 'items'])->name('pso.items');
-    Route::get('/pso/run',     [PsoController::class, 'run'])->name('pso.run');
     Route::get('/pso/results', [PsoController::class, 'results'])->name('pso.results');
+    Route::post('/pso/run', [PsoController::class, 'run'])->name('pso.run');
+    Route::post('/pso/save', [PsoController::class, 'save'])->name('pso.save');
 
     // ── Master Data (Laravel Native) ─────────────────────────
     // Kota
@@ -53,11 +56,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile',        [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',      [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',     [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+// });
 
-use App\Http\Controllers\RiwayatController;
 
 // Riwayat & Laporan
 Route::get('/riwayat',          [RiwayatController::class, 'index'])->name('riwayat.index');
 Route::get('/riwayat/excel',    [RiwayatController::class, 'exportExcel'])->name('laporan.excel');
 Route::get('/riwayat/pdf',      [RiwayatController::class, 'exportPdf'])->name('laporan.pdf');
+
+// debug
+Route::post('/pso/debug', function(\Illuminate\Http\Request $request) {
+    try {
+        // Test 1: Cek items
+        $count = \App\Models\Item::where('status', 'menunggu')->count();
+        
+        // Test 2: Cek Python
+        $pythonPath = "D:\\Program\\Laragon\\bin\\python\\python-3.10\\python.exe";
+        $pythonExists = file_exists($pythonPath);
+        
+        // Test 3: Cek shell_exec
+        $shellTest = shell_exec('echo hello 2>&1');
+        
+        // Test 4: Cek engine file
+        $enginePath = base_path('engine/run_pso.py');
+        $engineExists = file_exists($enginePath);
+
+        return response()->json([
+            'items_count'    => $count,
+            'python_exists'  => $pythonExists,
+            'python_path'    => $pythonPath,
+            'shell_exec_ok'  => $shellTest,
+            'engine_exists'  => $engineExists,
+            'engine_path'    => $enginePath,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['exception' => $e->getMessage(), 'line' => $e->getLine()]);
+    }
+});
