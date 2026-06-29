@@ -1,12 +1,3 @@
-"""
-engine/relocation.py
-======================
-Keputusan relokasi truk cost-benefit & update posisi truk setelah operasi
-harian. Logika identik dengan kode asli (REV-6), satu perubahan: daftar
-depot sekarang datang dari `depot_names` (database, bisa berapa pun),
-bukan dari DEPOT_MAP yang hardcoded 6 depot.
-"""
-
 from collections import defaultdict
 
 from engine.astar import astar_cached

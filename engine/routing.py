@@ -47,13 +47,6 @@ def _kandidat_orientasi(item):
 
 def guillotine_pack(items_ordered, box_p, box_l, box_t,
                     orientasi_terpakai: dict = None) -> set:
-    """
-    Best-fit Guillotine packing dengan rotasi horizontal.
-
-    orientasi_terpakai: kirim None saat dipanggil dari loop PSO (default,
-    tidak ada overhead). Kirim dict kosong {} dari halaman Hasil Operasional
-    kalau mau tahu orientasi tiap barang untuk manifest loading.
-    """
     ruang_list = [Ruang(box_p, box_l, box_t)]
     berhasil_id = set()
 

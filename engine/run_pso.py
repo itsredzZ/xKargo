@@ -1,9 +1,3 @@
-"""
-engine/run_pso.py
-==================
-Entry point CLI untuk dipanggil dari PHP (PsoController::run).
-"""
-
 import sys
 import json
 import os

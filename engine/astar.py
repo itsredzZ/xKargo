@@ -1,19 +1,3 @@
-"""
-engine/astar.py
-=================
-A* search untuk jarak antar kota — logika identik dengan pso_no2_last_boss.py
-(REV-5), hanya satu perubahan penting:
-
-  PERUBAHAN: cache A* (_ASTAR_CACHE) yang di kode asli adalah dict GLOBAL
-  di level modul. Itu berbahaya di Streamlit karena satu proses bisa
-  melayani beberapa sesi/pengguna sekaligus -> cache bisa "bocor" antar
-  sesi atau (lebih buruk) antar hari simulasi yang berbeda graph-nya.
-
-  Solusinya: cache sekarang adalah dict biasa yang dibuat oleh PEMANGGIL
-  (satu per run optimasi) dan diteruskan sebagai parameter eksplisit.
-  Fungsionalitas caching-nya sama persis, hanya scope-nya yang dikontrol.
-"""
-
 import heapq
 import numpy as np
 
@@ -69,13 +53,6 @@ def astar_distance(adj, city_idx, cities, start, end, coords) -> float:
 
 
 def astar_cached(adj, city_idx, cities, start, end, coords, cache: dict) -> float:
-    """
-    Wrapper A* dengan cache eksplisit. `cache` adalah dict biasa yang
-    dibuat sekali oleh pemanggil (mis. orchestrator) di awal satu run
-    optimasi, lalu diteruskan ke seluruh fungsi yang butuh jarak
-    (routing, fitness, relocation) supaya tidak hitung ulang pasangan
-    kota yang sama berkali-kali dalam loop PSO.
-    """
     key = (start, end)
     if key not in cache:
         cache[key] = astar_distance(adj, city_idx, cities, start, end, coords)

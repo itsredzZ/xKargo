@@ -1,22 +1,3 @@
-"""
-engine/item_assignment.py
-===========================
-Assign truck_id ke tiap item berdasarkan truk yang parkir di depot asal
-item tersebut. Ini harus berjalan SEBELUM PSO dipanggil, karena fitness.py
-mengelompokkan item berdasarkan truck_id.
-
-Dua hasil yang dikembalikan:
-  - items_siap    : item yang sudah dapat truck_id → masuk ke PSO
-  - items_notruk  : item yang depotnya tidak ada truknya → auto carry-over
-                    SEBELUM PSO jalan (bukan gagal di dalam packer)
-
-Kenapa dipisah dari orchestrator.py:
-  Halaman 6_Optimasi_Hasil.py butuh tahu items_notruk SEBELUM PSO jalan
-  supaya bisa tampilkan info ke operator ("X item langsung carry-over
-  karena depotnya tidak ada truk"). Kalau digabung di orchestrator,
-  info ini tidak tersedia sampai PSO selesai.
-"""
-
 from collections import defaultdict
 from engine.data_models import TruckState
 
@@ -36,24 +17,7 @@ def assign_trucks_to_items(
     items: list[dict],
     trucks: list[TruckState],
 ) -> tuple[list[dict], list[dict]]:
-    """
-    Assign truck_id ke tiap item berdasarkan current_city truk.
 
-    Aturan assignment:
-      - Item carry-over (is_carryover=True) mendapat prioritas PERTAMA
-        dalam antrian per depot — urutan ini dipertahankan supaya
-        carry-over selalu dapat slot sebelum barang baru.
-      - Jika satu depot punya lebih dari 1 truk, semua item di depot itu
-        di-assign ke truk PERTAMA (index 0) di depot tersebut. PSO yang
-        akan memutuskan distribusi optimalnya lewat Direct Order.
-      - Item dengan kota_asal yang tidak ada truknya → items_notruk
-        (langsung carry-over, tidak masuk PSO).
-
-    Mengembalikan:
-      (items_siap, items_notruk)
-      items_siap   : list item dengan truck_id terisi, carry-over di depan
-      items_notruk : list item yang depotnya kosong truk
-    """
     depot_truck_map = build_depot_truck_map(trucks)
 
     # Pisah carry-over dan baru per depot untuk jaga urutan prioritas

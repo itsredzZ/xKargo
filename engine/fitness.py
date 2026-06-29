@@ -1,27 +1,3 @@
-"""
-engine/fitness.py
-===================
-Evaluasi fitness (profit harian) untuk satu partikel PSO.
-
-PERUBAHAN PALING PENTING dari kode asli:
-─────────────────────────────────────────
-Kode asli (evaluate_fitness di pso_no2_last_boss.py):
-    for truck_id in range(1, 7):           # <- HARDCODED selalu 6 truk
-        depot = effective_depot.get(truck_id, TRUCK_DEPOT.get(truck_id))
-        ...
-        if (cum_vol + item['volume'] <= BOX_VOL and               # <- konstanta GLOBAL
-            cum_berat_fisik + item['berat_fisik'] <= BOX_BERAT_MAX):
-
-Di sini, truk diterima sebagai LIST OF TruckState (jumlah & kapasitas
-bebas, dikelola admin lewat halaman Manajemen Truk), dan setiap truk
-memakai kapasitas (box_volume, max_weight_kg) MILIKNYA SENDIRI, bukan
-satu nilai global yang dipakai semua truk.
-
-Sisanya — PSO Direct Order, carry-over priority (key=-1.0), pre-filter
-kapasitas, Guillotine packing, perhitungan tarif/BBM — identik dengan
-logika asli.
-"""
-
 from collections import defaultdict
 
 from engine.astar import astar_cached
@@ -38,22 +14,6 @@ def hitung_tarif_per_barang(item: dict, jarak_km: float, tarif_dasar: float) -> 
 
 def evaluate_fitness(particle, items, trucks, adj, city_idx, cities, coords,
                       cache, op_params, depot_names):
-    """
-    Evaluasi satu partikel -> (profit, detail_routes).
-
-    Parameter:
-      particle    : array desimal [0.00, 0.99], satu nilai per item di `items`
-                    (urutan elemen particle harus selaras dengan urutan items)
-      items       : list item dict (lihat data_models.item_to_algo_dict),
-                    setiap item sudah punya 'truck_id' hasil assignment
-                    orchestrator berdasarkan posisi truk hari ini
-      trucks      : list TruckState (lihat data_models.py) — truk yang
-                    SEDANG beroperasi hari ini (sudah py punya posisi current_city)
-      op_params   : engine.config.OperationalParams (tarif_dasar, bbm_base, dst)
-      depot_names : list nama kota depot aktif (untuk nearest_neighbor_route)
-
-    Mengembalikan: (profit: float, detail_routes: dict[truck_id -> info])
-    """
     truck_groups = defaultdict(list)
     for i, item in enumerate(items):
         if item.get("is_carryover", False):

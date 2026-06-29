@@ -1,11 +1,3 @@
-"""
-engine/config.py
-==================
-Parameter PSO & operasional sebagai dataclass — pengganti konstanta global
-(W_MAX, C1, TARIF_DASAR, dst) di kode asli. Diisi dari tabel `settings`,
-bukan hardcoded, sesuai requirement halaman Pengaturan (G) di proposal.
-"""
-
 from dataclasses import dataclass
 
 
@@ -30,7 +22,6 @@ class OperationalParams:
 
 
 def _to_number(value: str):
-    """Konversi string dari kolom param_value ke int/float yang sesuai."""
     try:
         if "." in value:
             return float(value)
@@ -40,15 +31,6 @@ def _to_number(value: str):
 
 
 def load_pso_params(setting_rows) -> PSOParams:
-    """
-    setting_rows: iterable objek Setting (atau dict sejenis) dengan
-    field param_group=='pso', param_key, param_value.
-
-    Contoh pemakaian (di halaman Streamlit):
-        with get_session() as session:
-            rows = session.query(Setting).filter_by(param_group="pso").all()
-            pso_params = load_pso_params(rows)
-    """
     values = {row.param_key: _to_number(row.param_value) for row in setting_rows}
     defaults = PSOParams()
     return PSOParams(

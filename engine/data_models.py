@@ -1,30 +1,3 @@
-"""
-engine/data_models.py
-=======================
-Jembatan antara baris ORM (db/models.py) dan struct dict yang dipakai
-engine PSO/A*/Guillotine.
-
-KATEGORI/FAKTOR DIMENSI — TIDAK PERLU KOLOM BARU DI SKEMA:
-─────────────────────────────────────────────────────────
-Kategori & faktor tarif dihitung DINAMIS dari dimensi barang vs dimensi
-truk yang membawanya — tidak perlu kolom `kategori`/`faktor` di tabel
-`items`. Ini penting karena dimensi box tiap truk sekarang bisa berbeda
-(dikelola admin lewat halaman Manajemen Truk).
-
-Golongan (sesuai business rule tim):
-  Kecil    : semua sisi <= 50 cm                               faktor 1.0
-  Menengah : semua sisi <= 100 cm, tapi min. 1 sisi > 50 cm   faktor 1.5
-  Besar    : min. 1 sisi > 100 cm, semua sisi <= box truk      faktor 2.0
-  Ditolak  : ada sisi melebihi dimensi box truk                faktor 0.0
-
-KONSISTENSI DENGAN GUILLOTINE PACKER (routing.py):
-─────────────────────────────────────────────────
-routing.py mencoba 2 orientasi horizontal (normal dan diputar 90° P<->L)
-saat muat barang ke ruang kosong. Maka klasifikasi_dimensi() di sini JUGA
-mempertimbangkan rotasi P<->L saat cek "Ditolak" — barang dianggap Ditolak
-hanya jika KEDUA orientasi tidak muat. Tinggi tidak diputar di keduanya.
-"""
-
 from dataclasses import dataclass
 from typing import Optional
 

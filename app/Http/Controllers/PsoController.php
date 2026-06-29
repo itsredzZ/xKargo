@@ -129,7 +129,7 @@ class PsoController extends Controller
         $cityMap  = City::where('is_active', 1)->pluck('id', 'name')->toArray();
 
         $importErrors = [];
-        $groups       = []; // key: "depotId_cityId" → ['depot_id', 'city_id', 'items']
+        $groups       = [];
 
         foreach ($rawRows as $i => $row) {
             $lineNo    = $i + 2; // baris Excel (baris 1 adalah header)
@@ -358,9 +358,6 @@ class PsoController extends Controller
                 ], 500);
             }
 
-            // ── Filter truk "ghost" (idle, tidak bawa barang) dari output PSO ──
-            // Ini mencegah PSO menampilkan lebih banyak truk dari yang aktif karena
-            // partikel PSO bisa menghasilkan entri untuk truk yang tidak kebagian barang.
             if (isset($result['best_routes'])) {
                 $result['best_routes'] = array_filter(
                     $result['best_routes'],
@@ -392,12 +389,12 @@ class PsoController extends Controller
 
             foreach ($hasil['best_routes'] as $truckId => $ri) {
                 SimulationResult::create([
-                    'batch_id'          => $batchId,           // ← tambah ini
+                    'batch_id'          => $batchId, 
                     'run_date'          => $today,
                     'truck_id'          => $truckId,
                     'route_json'        => ['rute' => $ri['rute'] ?? []],
                     'total_weight_kg'   => $ri['berat_muatan'] ?? 0,
-                    'total_volume_m3'   => $ri['volume_m3'] ?? 0,  // ← tambah ini
+                    'total_volume_m3'   => $ri['volume_m3'] ?? 0,
                     'tariff_total'      => $ri['tarif'] ?? 0,
                     'fuel_cost'         => $ri['biaya_bbm'] ?? 0,
                     'net_profit'        => ($ri['tarif'] ?? 0) - ($ri['biaya_bbm'] ?? 0),

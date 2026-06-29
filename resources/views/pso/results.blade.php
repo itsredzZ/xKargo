@@ -25,7 +25,7 @@
 
 <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
 
-    {{-- ─── HEADER ─────────────────────────────────────────────── --}}
+    {{--  HEADER ── --}}
     <header class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md shadow-violet-100">
@@ -38,19 +38,19 @@
         </div>
     </header>
 
-    {{-- ─── TOMBOL RUN ──────────────────────────────────────────── --}}
+    {{--  TOMBOL RUN ── --}}
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div id="status-text" class="text-sm text-slate-600">Siap menjalankan optimasi berdasarkan pesanan hari ini.</div>
         <button id="btn-run" onclick="runPSO()" class="relative bg-blue-600 hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-md flex items-center gap-2 w-fit">Jalankan Optimasi</button>
     </div>
 
-    {{-- ─── AREA HASIL (hidden sampai PSO selesai) ─────────────── --}}
+    {{--  AREA HASIL (hidden sampai PSO selesai)  --}}
     <div id="area-hasil" class="hidden space-y-6">
 
-        {{-- CHARTS ──────────────────────────────────────────────── --}}
+        {{-- CHARTS  --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {{-- Konvergensi Gbest ─────────────── --}}
+            {{-- Konvergensi Gbest  --}}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="flex items-start justify-between mb-4">
                     <div>
@@ -75,7 +75,7 @@
                 </div>
             </div>
 
-            {{-- Velocity Breakdown ───────────── --}}
+            {{-- Velocity Breakdown ─ --}}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
                 <div class="mb-4">
                     <div class="flex items-start justify-between mb-3">
@@ -104,7 +104,7 @@
             </div>
         </div>
 
-        {{-- PETA RUTE ─────────────────────────────────────────────── --}}
+        {{-- PETA RUTE ── --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -141,10 +141,10 @@
             </div>
         </div>
 
-        {{-- DETAIL TRUK ──────────────────────────────────────────── --}}
+        {{-- DETAIL TRUK ── --}}
         <div id="truck-details" class="space-y-4"></div>
 
-        {{-- RINGKASAN PROFIT + TOMBOL SIMPAN ────────────────────── --}}
+        {{-- RINGKASAN PROFIT + TOMBOL SIMPAN ─ --}}
         <section class="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl shadow-lg p-6 text-white">
             <div class="grid grid-cols-3 gap-6 mb-6">
                 <div>
@@ -176,7 +176,7 @@
 </div>
 
 <script>
-// ─── Data kota dari Laravel (server-side) ─────────────────────────
+//  Data kota dari Laravel (server-side) ─
 // Dipakai untuk tahu mana depot dan mana kota reguler di peta.
 // Diisi oleh controller via compact('allCities').
 const ALL_CITIES = @json($allCities ?? []);
@@ -194,7 +194,7 @@ const TRUCK_COLORS = [
 
 let psoData = null, chartConv = null, chartVel = null, petaRute = null;
 
-// ─── Jalankan PSO ─────────────────────────────────────────────────
+//  Jalankan PSO ─
 async function runPSO() {
     const btn = document.getElementById('btn-run');
     btn.classList.add('btn-loading');
@@ -244,7 +244,7 @@ async function runPSO() {
     }
 }
 
-// ─── Render semua visualisasi ─────────────────────────────────────
+//  Render semua visualisasi ─
 function renderAll(d) {
     document.getElementById('area-hasil').classList.remove('hidden');
     renderConvergenceChart(d);
@@ -258,7 +258,7 @@ function renderAll(d) {
     document.getElementById('sum-profit').innerText = fmt((d.total_tarif || 0) - (d.total_bbm || 0));
 }
 
-// ─── 1. Grafik Konvergensi ────────────────────────────────────────
+//  1. Grafik Konvergensi ─
 function renderConvergenceChart(d) {
     if (chartConv) chartConv.destroy();
 
@@ -319,7 +319,7 @@ function renderConvergenceChart(d) {
     });
 }
 
-// ─── 2. Velocity Breakdown ────────────────────────────────────────
+//  2. Velocity Breakdown ─
 function renderVelocityChart(d) {
     const velData  = d.velocity_breakdown || [];
     const slider   = document.getElementById('iterSlider');
@@ -389,7 +389,7 @@ function renderVelocityChart(d) {
     drawVel(0);
 }
 
-// ─── 3. Peta Rute ─────────────────────────────────────────────────
+// 3. Peta Rute
 function renderMap(d) {
     if (petaRute) { petaRute.remove(); petaRute = null; }
 
@@ -413,7 +413,7 @@ function renderMap(d) {
         }
     });
 
-    // ── Fungsi helper: icon depot ──
+    //  Fungsi helper: icon depot
     function makeDepotIcon(color) {
         return L.divIcon({
             className: '',
@@ -576,7 +576,7 @@ function renderMap(d) {
     if (bounds.length) petaRute.fitBounds(bounds, { padding: [50, 50] });
 }
 
-// ─── 4. Detail Truk (accordion) ───────────────────────────────────
+//  4. Detail Truk (accordion) ──
 function renderTruckDetails(d) {
     const fmt = n => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
     let html = '';

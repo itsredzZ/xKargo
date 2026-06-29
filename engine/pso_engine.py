@@ -1,24 +1,3 @@
-"""
-engine/pso_engine.py
-======================
-Inti algoritma PSO — w dinamis (linear decay), inisialisasi random murni,
-PSO Direct Order. Logika numerik identik dengan kode asli. Dua perubahan:
-
-  1. TIDAK ADA print() sama sekali. Kode asli mencetak progress ke console
-     (gaya Colab). Di sini setiap langkah penting di-return sebagai data
-     terstruktur, supaya Streamlit bisa render via st.dataframe/Plotly,
-     dan hasilnya bisa disimpan ke `simulation_results`.
-
-  2. Velocity breakdown DITANGKAP. Kode asli menghitung w*v, c1*r1*(pbest-x),
-     c2*r2*(gbest-x) lalu langsung menjumlahkannya (komponennya dibuang).
-     Proposal menjanjikan chart "PSO Velocity Breakdown" yang butuh
-     ketiga komponen ini terpisah per iterasi -> sekarang direkam.
-
-  progress_callback (opsional): dipanggil tiap iterasi dengan
-  (current_iter, n_iterasi, gbest_val) supaya halaman Streamlit bisa
-  update st.progress()/st.spinner() secara live.
-"""
-
 import numpy as np
 
 from engine.fitness import evaluate_fitness
@@ -34,13 +13,6 @@ def compute_w(it: int, n_iterasi: int, w_max: float, w_min: float) -> float:
 
 
 def update_velocity(v_lama, x_lama, pbest, gbest, w, c1, c2, rng: np.random.Generator):
-    """
-    V_baru = w*V_lama + c1*r1*(Pbest-X) + c2*r2*(Gbest-X)
-
-    Mengembalikan (v_baru, komponen) di mana `komponen` adalah dict berisi
-    magnitude rata-rata (mean absolute) tiap suku, untuk visualisasi
-    PSO Velocity Breakdown.
-    """
     n = len(v_lama)
     r1 = rng.uniform(0, 1, n)
     r2 = rng.uniform(0, 1, n)
@@ -70,22 +42,6 @@ def update_position(x_lama, v_baru):
 
 def run_pso(items, trucks, adj, city_idx, cities, coords, depot_names,
             pso_params, op_params, progress_callback=None):
-    """
-    Jalankan PSO lengkap untuk satu hari/satu batch item.
-
-    Mengembalikan dict siap-pakai untuk disimpan ke `simulation_results`
-    dan dirender di halaman Optimasi & Hasil:
-
-      {
-        "gbest_val": float,
-        "gbest_pos": np.ndarray,
-        "best_routes": dict (truck_id -> detail rute, lihat fitness.py),
-        "gbest_curve": list[float]           -> untuk Grafik Konvergensi
-        "velocity_breakdown": list[dict]     -> untuk PSO Velocity Breakdown
-        "n_iterasi_aktual": int,
-        "early_stopped": bool,
-      }
-    """
     n_items = len(items)
     cache = {}  # cache A* untuk satu run optimasi ini (lihat astar.py)
     rng = np.random.default_rng(pso_params.base_seed)
