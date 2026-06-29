@@ -195,7 +195,7 @@ class PsoController extends Controller
                 return response()->json(['error' => 'Tidak ada pesanan pending hari ini'], 400);
             }
 
-            $trucksData = Truck::where('is_active', true)->with('homeDepot')->get()->map(fn($t) => [
+            $trucksData = Truck::where('is_active', true)->where('operational_status', 'available')->with('homeDepot')->get()->map(fn($t) => [
                 'id'            => $t->id,
                 'plate_number'  => $t->plate_number,
                 'max_weight_kg' => (float) $t->max_weight_kg,
