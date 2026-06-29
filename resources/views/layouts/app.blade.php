@@ -118,7 +118,7 @@
                 {{-- PERBAIKAN 2: Memasukkan menu Utama / Dashboard (Pesan titipan Valen) --}}
                 <a href="{{ route('dashboard') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition font-medium {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                     <span>beranda</span>
+                     <span>Beranda</span>
                 </a>
 
                 {{-- Grup: Data Master --}}
