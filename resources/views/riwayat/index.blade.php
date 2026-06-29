@@ -5,7 +5,7 @@
 <div class="space-y-6">
 
     <div class="flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-gray-800">📋 Riwayat & Laporan</h1>
+        <h1 class="text-xl font-semibold text-gray-800">Riwayat & Laporan</h1>
     </div>
 
     {{-- Filter Tanggal --}}
@@ -23,16 +23,16 @@
         </div>
         <button type="submit"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-            🔍 Filter
+            Filter
         </button>
         <div class="ml-auto flex gap-2">
             <a href="{{ route('laporan.excel', ['start' => $startDate, 'end' => $endDate]) }}"
                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                ⬇️ Export Excel
+                Export Excel
             </a>
             <a href="{{ route('laporan.pdf', ['start' => $startDate, 'end' => $endDate]) }}"
                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                ⬇️ Export PDF
+                Export PDF
             </a>
         </div>
     </form>

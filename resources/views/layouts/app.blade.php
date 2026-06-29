@@ -118,7 +118,7 @@
                 {{-- PERBAIKAN 2: Memasukkan menu Utama / Dashboard (Pesan titipan Valen) --}}
                 <a href="{{ route('dashboard') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition font-medium {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    🏠 <span>Dashboard</span>
+                     <span>Dashboard</span>
                 </a>
 
                 {{-- Grup: Data Master --}}
@@ -127,21 +127,21 @@
                 </p>
                 <a href="{{ route('cities.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('cities.*') ? 'active' : '' }}">
-                    🗺️ <span>Kota & Jaringan</span>
+                    <span>Kota & Jaringan</span>
                 </a>
                 <a href="{{ route('trucks.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('trucks.*') ? 'active' : '' }}">
-                    🚛 <span>Armada Truk</span>
+                    <span>Armada Truk</span>
                 </a>
                 <a href="{{ route('depot.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('depot.*') ? 'active' : '' }}">
-                    🏭 <span>Depot</span>
+                    <span>Depot</span>
                 </a>
 
                 {{-- PERBAIKAN 3: Memasukkan menu Database Barang (Tugas Chelsea) --}}
                 <a href="{{ route('items.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.items') ? 'active' : '' }}">
-                    📋 <span>Database Barang</span>
+                    <span>Database Barang</span>
                 </a>
 
                 {{-- Grup: PSO Engine (Streamlit embed) --}}
@@ -150,16 +150,11 @@
                 </p>
                 <a href="{{ route('pso.orders') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.orders') ? 'active' : '' }}">
-                    📦 <span>Input Pesanan</span>
-                </a>
-                <a href="{{ route('pso.run') }}"
-                    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.run') ? 'active' : '' }}">
-                    ⚡ <span>Jalankan Optimasi</span>
-                    <span class="ml-auto bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">PSO</span>
+                    <span>Input Pesanan</span>
                 </a>
                 <a href="{{ route('pso.results') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.results') ? 'active' : '' }}">
-                    📊 <span>Hasil & Peta</span>
+                    <span>Hasil & Peta</span>
                 </a>
 
                 {{-- Grup: Administrasi --}}
@@ -168,11 +163,11 @@
                 </p>
                 <a href="{{ route('riwayat.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('riwayat.*') ? 'active' : '' }}">
-                    📋 <span>Riwayat & Laporan</span>
+                    <span>Riwayat & Laporan</span>
                 </a>
                 <a href="{{ route('settings.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                    ⚙️ <span>Parameter PSO</span>
+                    <span>Parameter PSO</span>
                 </a>
             </nav>
 
