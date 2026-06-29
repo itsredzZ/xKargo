@@ -10,10 +10,7 @@ use Illuminate\Http\JsonResponse;
 
 class CityController extends Controller
 {
-    /**
-     * GET /api/cities
-     * Semua kota aktif — untuk dropdown tujuan.
-     */
+    // Semua kota aktif untuk dropdown tujuan dalam format JSOn
     public function index(): JsonResponse
     {
         $cities = City::active()->orderBy('name')->get();
@@ -32,10 +29,7 @@ class CityController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/cities/depots
-     * Hanya depot aktif — dipanggil untuk halaman peta.
-     */
+    // Hanya depot aktif dipanggil untuk halaman peta
     public function depots(): JsonResponse
     {
         $depots = City::depot()->orderBy('name')->get();
@@ -52,17 +46,14 @@ class CityController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/cities/matrix
-     * Matriks jarak lengkap untuk arsitektur pencarian rute (PSO Engine).
-     */
+    // Adjacency matrix lengkap untuk PSO dan algoritma A*
     public function matrix(): JsonResponse
     {
-        // 1. Ambil semua kota yang AKTIF saja
+        // Ambil semua kota yang aktif saja
         $allCities = City::active()->orderBy('name')->get();
         $activeCityIds = $allCities->pluck('id')->toArray();
 
-        // 2. OPTIMASI DATABASE BARU: Hanya ambil jarak di mana KEDUA kota tersebut aktif
+        // Hanya ambil jarak di mana kedua kota tersebut aktif
         $distances = DepotDistance::whereIn('city_a_id', $activeCityIds)
                                   ->whereIn('city_b_id', $activeCityIds)
                                   ->get();
@@ -77,7 +68,7 @@ class CityController extends Controller
             $c->name => [(float)$c->latitude, (float)$c->longitude]
         ])->toArray();
 
-        // Adj matrix — inisialisasi dengan INF (null)
+        // Adj matrix
         $adj = array_fill(0, $n, array_fill(0, $n, null)); 
         for ($i = 0; $i < $n; $i++) {
             $adj[$i][$i] = 0.0;
@@ -106,10 +97,7 @@ class CityController extends Controller
         ]);
     }
 
-    /**
-     * POST /api/cities
-     * Tambah kota baru. Database baru akan otomatis mengisi created_at & updated_at.
-     */
+    // Tambah kota baru
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -132,10 +120,7 @@ class CityController extends Controller
         ], 201);
     }
 
-    /**
-     * PATCH /api/cities/{id}
-     * Update data kota. updated_at akan otomatis terisi oleh Laravel.
-     */
+    // Update data kota
     public function update(Request $request, int $id): JsonResponse
     {
         $city = City::findOrFail($id);

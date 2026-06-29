@@ -74,7 +74,7 @@
 
     <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
 
-        {{-- ── HEADER ──────────────────────────────────────────────── --}}
+        {{-- Header --}}
         <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div class="flex items-center gap-4">
                 <div
@@ -102,8 +102,6 @@
         </header>
 
         @if ($depots->isEmpty())
-
-            {{-- ── EMPTY STATE ─────────────────────────────────────────── --}}
             <div class="flex flex-col items-center justify-center py-24 text-center">
                 <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
                     <svg class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -121,7 +119,6 @@
                 </p>
             </div>
         @else
-            {{-- ── WARNING: 0 siap jalan ───────────────────────────────── --}}
             @if ($totalAvail === 0 && $totalTrucks > 0)
                 <div
                     class="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-5 py-4 rounded-xl">
@@ -138,7 +135,7 @@
                 </div>
             @endif
 
-            {{-- ── KARTU DEPOT ────────────────────────────────────────── --}}
+            {{-- Kartu depot --}}
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
                 @foreach ($depots as $depot)
                     @php
@@ -288,7 +285,6 @@
                                 @endif
                             </div>
 
-                            {{-- Stat row --}}
                             <div class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
                                 <div class="px-4 py-3 text-center">
                                     <p class="text-xl font-black text-emerald-600">{{ $nAvail }}</p>
@@ -336,7 +332,7 @@
 
                         </div>
 
-                        {{-- Footer aksi --}}
+                        {{-- Footer --}}
                         <div class="px-5 py-3.5 flex items-center justify-between gap-3">
                             <button type="button"
                                 @if ($depot->is_active) onclick="bukaModalEdit({{ $depot->id }}, '{{ $depot->name }}', {{ $depot->max_truck_capacity ?? 4 }}, {{ $depot->max_warehouse_kg ?? 20000 }})"
@@ -407,10 +403,9 @@
                 @endforeach
             </div>
 
-        @endif {{-- end depots not empty --}}
+        @endif
     </div>
 
-    {{-- ── MODAL ATUR KAPASITAS ─────────────────────────────────────────────── --}}
     <div id="modal-edit-depot" class="fixed inset-0 z-[60] items-center justify-center bg-black/50 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-depot-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md mx-4 overflow-hidden">
@@ -445,7 +440,6 @@
                 <input type="hidden" name="depot_id" id="modal-depot-id">
                 <input type="hidden" name="is_active" id="modal-depot-aktif">
 
-                {{-- Wrapper Input --}}
                 <div class="p-6 space-y-6">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
@@ -472,7 +466,7 @@
                     </div>
                 </div>
 
-                {{-- Footer Tombol --}}
+                {{-- Footer --}}
                 <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
                     <button type="button" onclick="tutupModalEdit()"
                         class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
@@ -491,11 +485,10 @@
         </div>
     </div>
 
-    {{-- ── SCRIPTS ──────────────────────────────────────────────────────────── --}}
     <script>
         function bukaModalEdit(id, nama, maxTruk, maxWh) {
             document.getElementById('modal-depot-id').value = id;
-            document.getElementById('modal-depot-aktif').value = 1; // is_active tidak berubah
+            document.getElementById('modal-depot-aktif').value = 1;
             document.getElementById('modal-depot-nama').textContent = nama;
             document.getElementById('modal-max-truk').value = maxTruk;
             document.getElementById('modal-max-wh').value = maxWh;

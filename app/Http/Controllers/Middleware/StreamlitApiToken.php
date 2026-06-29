@@ -1,22 +1,7 @@
 <?php
-// app/Http/Middleware/StreamlitApiToken.php
-// ─────────────────────────────────────────
-// POLA 2 — Keamanan API
-// Streamlit kirim header: Authorization: Bearer <token>
-// Token disimpan di .env → STREAMLIT_API_TOKEN
-//
-// Cara set token di Streamlit (.env atau st.secrets):
-//   LARAVEL_API_URL=http://localhost:8000
-//   LARAVEL_API_TOKEN=your-secret-token
-//
-// Cara pakai di Streamlit:
-//   import os, requests
-//   headers = {"Authorization": f"Bearer {os.getenv('LARAVEL_API_TOKEN')}"}
-//   r = requests.get(f"{os.getenv('LARAVEL_API_URL')}/api/trucks", headers=headers)
-
 namespace App\Http\Controllers\Middleware;
 
-use Closure;
+use Closure; // Untuk meneruskan request ke proses berikutnya
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 

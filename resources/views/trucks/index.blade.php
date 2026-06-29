@@ -93,7 +93,7 @@
 
     <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
 
-        {{-- ── HEADER ─────────────────────────────────────────────────────── --}}
+        {{-- Header --}}
         <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div class="flex items-center gap-4">
                 <div
@@ -124,7 +124,7 @@
             </span>
         </header>
 
-        {{-- ── KPI CARDS ──────────────────────────────────────────────────── --}}
+        {{-- Kartu Truk --}}
         @php
             $total = $summary['total'] ?: 1;
             $pctSiap = round(($summary['available'] / $total) * 100);
@@ -220,7 +220,7 @@
             </div>
         </div>
 
-        {{-- ── BAR KOMPOSISI ARMADA ────────────────────────────────────────── --}}
+        {{-- Bar komposisi armada --}}
         @if ($summary['total'] > 0)
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-4 mb-6">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
@@ -257,7 +257,6 @@
             </div>
         @endif
 
-        {{-- ── PERINGATAN: 0 truk siap jalan ─────────────────────────────── --}}
         @if ($summary['available'] === 0)
             <div
                 class="mb-6 flex items-start gap-3 bg-red-50 border border-red-200
@@ -276,7 +275,7 @@
             </div>
         @endif
 
-        {{-- ── FORM DAFTARKAN TRUK ────────────────────────────────────────── --}}
+        {{-- Form daftarkan truk --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
 
             <header
@@ -428,13 +427,13 @@
             </div>
         </section>
 
-        {{-- ── TABEL ───────────────────────────────────────────────────────── --}}
+        {{-- Tabel --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
 
             <div
                 class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
-                {{-- Filter tabs via URL --}}
+                {{-- Filter --}}
                 @php $fStat = request('status', 'all'); @endphp
                 <div class="flex items-center gap-2 flex-wrap">
                     <a href="{{ route('trucks.index', array_merge(request()->query(), ['status' => 'all'])) }}"
@@ -455,7 +454,6 @@
                     </a>
                 </div>
 
-                {{-- Search via Form GET --}}
                 <form method="GET" action="{{ route('trucks.index') }}" class="relative w-full sm:w-60">
                     @if (request('status'))
                         <input type="hidden" name="status" value="{{ request('status') }}">
@@ -630,7 +628,7 @@
 
     </div>
 
-    {{-- ── MODAL UBAH DATA ─────────────────────────────────────────────────── --}}
+    {{-- Ubah Data --}}
     <div id="modal-edit-truk" class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-edit-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl mx-4 overflow-hidden">
@@ -777,7 +775,7 @@
         </div>
     </div>
 
-    {{-- ── MODAL KONFIRMASI HAPUS ──────────────────────────────────────────── --}}
+    {{-- Konfirmasi Hapus --}}
     <div id="modal-hapus-truk" class="fixed inset-0 z-[60] items-center justify-center bg-black/50 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-hapus-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm mx-4 p-6">
@@ -823,9 +821,7 @@
         </div>
     </div>
 
-    {{-- ── SCRIPTS ─────────────────────────────────────────────────────────── --}}
     <script>
-        // Data dari PHP → JS
         @php
             $truckData = $trucks->map(
                 fn($t) => [
@@ -844,7 +840,6 @@
         const TRUCK_DATA = @json($truckData);
         const PRESETS = @json($presets);
 
-        // ── Toggle form tambah ─────────────────────────────────────────────
         let formOpen = true;
 
         function toggleForm() {
@@ -853,7 +848,6 @@
             document.getElementById('form-chevron').classList.toggle('collapsed', !formOpen);
         }
 
-        // ── Preset auto-fill ───────────────────────────────────────────────
         function applyPreset(type) {
             const p = PRESETS[type];
             if (!p) return;
@@ -869,7 +863,7 @@
             applyPreset(elType.value);
         }
 
-        // ── Modal Edit ─────────────────────────────────────────────────────
+        // Edit
         let currentTruckId = null;
 
         function bukaModalEdit(id) {
@@ -896,7 +890,7 @@
             currentTruckId = null;
         }
 
-        // ── Modal Hapus ────────────────────────────────────────────────────
+        // Hapus
         function bukaModalHapusTruk() {
             if (!currentTruckId) return;
             document.getElementById('form-hapus-truk').action = `/trucks/${currentTruckId}`;
@@ -907,7 +901,6 @@
             document.getElementById('modal-hapus-truk').classList.remove('aktif');
         }
 
-        // Tutup dengan klik luar / Escape
         document.getElementById('modal-edit-truk').addEventListener('click', function(e) {
             if (e.target === this) tutupModalEdit();
         });
@@ -922,7 +915,7 @@
                 tutupModalEdit();
         });
 
-        // ── Filter + Search tabel ──────────────────────────────────────────
+        // Filter + search tabel
         let filterAktif = 'all';
 
         function filterTabel(filter, btn) {

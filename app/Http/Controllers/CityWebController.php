@@ -10,15 +10,18 @@ use Illuminate\Support\Facades\DB;
 
 class CityWebController extends Controller
 {
+    // Menampilkan daftar kota
     public function index()
     {
-        $cities = City::orderBy('name', 'asc')->paginate(10);
-        $allCities = City::all();
+        $cities = City::orderBy('name', 'asc')->paginate(10); // Ambil kota dari database, urut A-Z. Ditampilkan 10 kota per halaman
+        $allCities = City::all(); // Ambil semua kota untuk ditampilkan di open map
         return view('cities.index', compact('cities', 'allCities'));
     }
 
+    // Simpan kota baru
     public function store(Request $request)
     {
+        // Validasi input: nama wajib diisi, max 100 karakter, harus unik di tabel cities
         $request->validate([
             'name'     => ['required', 'string', 'max:100', 'unique:cities,name'],
             'is_depot' => ['nullable', 'boolean'],
@@ -27,10 +30,10 @@ class CityWebController extends Controller
             'name.unique'   => 'Kota ini sudah terdaftar.',
         ]);
 
-        // ── 1. Geocoding via Nominatim (OpenStreetMap, gratis) ──
+        // Menggunakan OpenStreetMap untuk mendapatkan latitude dan longitude
         [$lat, $lon] = $this->geocodeCity($request->name);
 
-        // ── 2. Simpan kota baru ──
+        // Simpan kota baru
         $city = City::create([
             'name'      => trim($request->name),
             'latitude'  => $lat,
@@ -39,16 +42,14 @@ class CityWebController extends Controller
             'is_active' => true,
         ]);
 
-        // ── 3. Auto-fill jarak ke semua kota lain via OSRM ──
+        // Mengisi jarak ke semua kota lain via OSRM
         $this->fillDistancesFromOsrm($city);
 
         return redirect()->route('cities.index')
             ->with('success', "Kota \"{$city->name}\" berhasil ditambahkan.");
     }
 
-    /**
-     * Toggle is_depot: depot ↔ reguler
-     */
+    // Ubah status depot
     public function toggleDepot(City $city)
     {
         $city->update(['is_depot' => !$city->is_depot]);
@@ -57,6 +58,7 @@ class CityWebController extends Controller
         return back()->with('success', "\"{$city->name}\" sekarang berstatus {$tipe}.");
     }
 
+    // Hapus kota beserta rute jaraknya
     public function destroy(City $city)
     {
         DB::table('depot_distances')
@@ -70,14 +72,7 @@ class CityWebController extends Controller
             ->with('success', 'Kota berhasil dihapus beserta rute jaraknya.');
     }
 
-    // ─────────────────────────────────────────────────────
-    // PRIVATE HELPERS
-    // ─────────────────────────────────────────────────────
-
-    /**
-     * Geocode nama kota → [lat, lon] via Nominatim.
-     * Fallback ke titik tengah Jawa Timur jika gagal.
-     */
+    // Geocode nama kota -> [lat, lon] via Nominatim (open streetmap)
     private function geocodeCity(string $name): array
     {
         try {
@@ -97,14 +92,11 @@ class CityWebController extends Controller
             // Log::warning("Geocoding gagal untuk {$name}: " . $e->getMessage());
         }
 
-        // Fallback: pusat Jawa Timur
+        // Koordinat default
         return [-7.5360, 112.2384];
     }
 
-    /**
-     * Hitung jarak dari $newCity ke semua kota lain via OSRM Table API,
-     * lalu simpan ke depot_distances (upsert kedua arah).
-     */
+    // Auto-fill jarak
     private function fillDistancesFromOsrm(City $newCity): void
     {
         $others = City::where('id', '!=', $newCity->id)
@@ -113,7 +105,7 @@ class CityWebController extends Controller
 
         if ($others->isEmpty()) return;
 
-        // Koordinat dalam format OSRM: lon,lat (GeoJSON convention)
+        // Koordinat dalam format OSRM: lon,lat
         $allCoords   = collect(["{$newCity->longitude},{$newCity->latitude}"]);
         $coordsOther = $others->map(fn($c) => "{$c->longitude},{$c->latitude}");
         $allCoords   = $allCoords->merge($coordsOther)->implode(';');
@@ -129,7 +121,6 @@ class CityWebController extends Controller
                 ]);
 
             if (!$resp->ok() || ($resp->json()['code'] ?? '') !== 'Ok') {
-                // Fallback Haversine × 1.3 untuk semua pasangan
                 foreach ($others as $other) {
                     $km = $this->haversineKm(
                         $newCity->latitude,
@@ -142,7 +133,7 @@ class CityWebController extends Controller
                 return;
             }
 
-            $durations = $resp->json()['durations']; // matrix N×N, index 0 = newCity
+            $durations = $resp->json()['durations'];
             foreach ($others as $idx => $other) {
                 $durSec = $durations[0][$idx + 1] ?? null;
                 $km = $durSec !== null
@@ -157,7 +148,6 @@ class CityWebController extends Controller
                 $this->upsertDistance($newCity->id, $other->id, $km);
             }
         } catch (\Exception $e) {
-            // OSRM timeout / unreachable → Haversine fallback
             foreach ($others as $other) {
                 $km = $this->haversineKm(
                     $newCity->latitude,

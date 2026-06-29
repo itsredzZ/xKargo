@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 
 class DepotWebController extends Controller
 {
+    // Menampilkan daftar depot dan ringkasan truk
     public function index()
     {
         $depots = City::where('is_depot', true)
@@ -20,7 +21,7 @@ class DepotWebController extends Controller
         $allTrucks = \App\Models\Truck::where('is_active', true)->get();
         $trucksByDepot = $allTrucks->groupBy('current_city_id');
 
-        // Hitung ringkasan untuk kartu KPI
+        // Hitung ringkasan untuk kartu
         $totalTrucks = $allTrucks->count();
         $totalAvail   = $allTrucks->where('operational_status', 'available')->count();
         $totalDuty    = $allTrucks->where('operational_status', 'on_duty')->count();
@@ -36,8 +37,7 @@ class DepotWebController extends Controller
         ));
     }
 
-    // Buka app/Http/Controllers/DepotWebController.php
-
+    // Tambah kapasitas depot
     public function updateCapacity(Request $request)
     {
         $depot = \App\Models\City::findOrFail($request->depot_id);

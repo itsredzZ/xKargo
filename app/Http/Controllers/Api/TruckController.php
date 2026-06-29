@@ -1,10 +1,4 @@
 <?php
-// app/Http/Controllers/Api/TruckController.php
-// ─────────────────────────────────────────────
-// POLA 2 — REST API
-// Endpoint ini dikonsumsi Streamlit via requests.get/post.
-// Semua response dalam format JSON identik dengan struktur
-// yang dikembalikan get_active_trucks() di queries.py.
 
 namespace App\Http\Controllers\Api;
 
@@ -16,22 +10,16 @@ use Illuminate\Http\JsonResponse;
 
 class TruckController extends Controller
 {
-    /**
-     * GET /api/trucks
-     * Semua truk aktif (setara get_active_trucks() di queries.py).
-     * Dipakai halaman Manajemen Truk Streamlit.
-     */
+    // Semua truk aktif 
     public function index(Request $request): JsonResponse
     {
         $query = Truck::with(['homeDepot', 'currentCity'])
                       ->where('is_active', true);
 
-        // Filter opsional: ?status=available
         if ($request->has('status')) {
             $query->where('operational_status', $request->status);
         }
 
-        // Filter opsional: ?depot_id=1
         if ($request->has('depot_id')) {
             $query->where('home_depot_id', $request->depot_id);
         }
@@ -43,11 +31,7 @@ class TruckController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/trucks/available
-     * Hanya truk available — setara get_available_trucks() di queries.py.
-     * KHUSUS untuk PSO engine Streamlit.
-     */
+    // Hanya truk available
     public function available(): JsonResponse
     {
         $trucks = Truck::with(['homeDepot', 'currentCity'])
@@ -59,20 +43,14 @@ class TruckController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/trucks/{id}
-     * Detail satu truk.
-     */
+    // Detail satu truk
     public function show(int $id): JsonResponse
     {
         $truck = Truck::with(['homeDepot', 'currentCity'])->findOrFail($id);
         return response()->json(['data' => $this->formatTruck($truck)]);
     }
 
-    /**
-     * POST /api/trucks
-     * Tambah truk baru — dari form Streamlit halaman Manajemen Truk.
-     */
+    // Tambah truk baru
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -100,10 +78,7 @@ class TruckController extends Controller
         ], 201);
     }
 
-    /**
-     * PUT /api/trucks/{id}
-     * Update truk — dari form edit Streamlit.
-     */
+    // Update truk
     public function update(Request $request, int $id): JsonResponse
     {
         $truck = Truck::findOrFail($id);
@@ -128,11 +103,7 @@ class TruckController extends Controller
         ]);
     }
 
-    /**
-     * PATCH /api/trucks/{id}/status
-     * Update hanya status operasional — dipanggil PSO setelah dispatch.
-     * Contoh body: {"status": "on_duty", "current_city_id": 3}
-     */
+    // Update hanya status operasional
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $truck = Truck::findOrFail($id);
@@ -153,7 +124,6 @@ class TruckController extends Controller
         ]);
     }
 
-    // ── Format output JSON identik dengan queries.py ──────────────────────
     private function formatTruck(Truck $t): array
     {
         return [
