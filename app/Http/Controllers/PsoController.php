@@ -19,14 +19,24 @@ class PsoController extends Controller
     // Halaman Input Pesanan
     public function orders()
     {
-        $depots = City::where('is_depot', 1)->where('is_active', 1)->get();
+        $depots    = City::where('is_depot', 1)->where('is_active', 1)->get();
         $allCities = City::where('is_active', 1)->get();
+
         $todayOrders = DeliveryOrder::whereDate('order_date', Carbon::today())
             ->where('status', 'pending')
             ->with(['items', 'originDepot', 'destinationCity'])
-            ->orderBy('id', 'desc')->get();
+            ->orderBy('id', 'desc')
+            ->get();
 
-        return view('pso.orders', compact('depots', 'allCities', 'todayOrders'));
+        // Carry-over: barang is_carryover=true & status=menunggu dari pesanan pending
+        // (bisa berasal dari hari-hari sebelumnya yang belum muat di truk)
+        $carryoverItems = Item::where('is_carryover', true)
+            ->where('status', 'menunggu')
+            ->whereHas('deliveryOrder', fn($q) => $q->where('status', 'pending'))
+            ->with(['deliveryOrder.originDepot', 'deliveryOrder.destinationCity'])
+            ->get();
+
+        return view('pso.orders', compact('depots', 'allCities', 'todayOrders', 'carryoverItems'));
     }
 
     // Simpan Pesanan Baru dari Form Manual
@@ -68,26 +78,28 @@ class PsoController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'excel_file'           => 'required|file|mimes:xlsx,xls,csv|max:2048',
-            'origin_depot_id'      => 'required|exists:cities,id',
-            'destination_city_id'  => 'required|exists:cities,id',
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:2048',
+            // Tidak ada lagi origin_depot_id / destination_city_id global —
+            // depot & kota tujuan dibaca per-baris dari kolom G & H
         ]);
 
         $file = $request->file('excel_file');
-        $rows = [];
+        $rawRows = [];
 
         if (class_exists(\Maatwebsite\Excel\Facades\Excel::class)) {
-            $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file);
+            $data  = \Maatwebsite\Excel\Facades\Excel::toArray([], $file);
             $sheet = $data[0];
             foreach (array_slice($sheet, 1) as $row) {
                 if (empty($row[0])) continue;
-                $rows[] = [
-                    'name'      => $row[0],
-                    'weight_kg' => $row[1] ?? 0,
-                    'length_cm' => $row[2] ?? 0,
-                    'width_cm'  => $row[3] ?? 0,
-                    'height_cm' => $row[4] ?? 0,
-                    'quantity'  => $row[5] ?? 1,
+                $rawRows[] = [
+                    'name'        => $row[0],
+                    'weight_kg'   => $row[1] ?? 0,
+                    'length_cm'   => $row[2] ?? 0,
+                    'width_cm'    => $row[3] ?? 0,
+                    'height_cm'   => $row[4] ?? 0,
+                    'quantity'    => $row[5] ?? 1,
+                    'depot_asal'  => trim($row[6] ?? ''),
+                    'kota_tujuan' => trim($row[7] ?? ''),
                 ];
             }
         } else {
@@ -95,53 +107,116 @@ class PsoController extends Controller
             array_shift($csv);
             foreach ($csv as $row) {
                 if (empty($row[0])) continue;
-                $rows[] = [
-                    'name'      => $row[0],
-                    'weight_kg' => $row[1] ?? 0,
-                    'length_cm' => $row[2] ?? 0,
-                    'width_cm'  => $row[3] ?? 0,
-                    'height_cm' => $row[4] ?? 0,
-                    'quantity'  => $row[5] ?? 1,
+                $rawRows[] = [
+                    'name'        => $row[0],
+                    'weight_kg'   => $row[1] ?? 0,
+                    'length_cm'   => $row[2] ?? 0,
+                    'width_cm'    => $row[3] ?? 0,
+                    'height_cm'   => $row[4] ?? 0,
+                    'quantity'    => $row[5] ?? 1,
+                    'depot_asal'  => trim($row[6] ?? ''),
+                    'kota_tujuan' => trim($row[7] ?? ''),
                 ];
             }
         }
 
-        if (empty($rows)) {
+        if (empty($rawRows)) {
             return back()->with('error', 'File kosong atau format tidak sesuai.');
         }
 
-        DB::transaction(function () use ($request, $rows) {
-            $order = DeliveryOrder::create([
-                'order_date'           => Carbon::today(),
-                'origin_depot_id'      => $request->origin_depot_id,
-                'destination_city_id'  => $request->destination_city_id,
-                'source'               => 'excel',
-            ]);
+        // Buat lookup name → id sekali saja
+        $depotMap = City::where('is_depot', 1)->where('is_active', 1)->pluck('id', 'name')->toArray();
+        $cityMap  = City::where('is_active', 1)->pluck('id', 'name')->toArray();
 
-            foreach ($rows as $row) {
-                Item::create([
-                    'order_id'     => $order->id,
-                    'name'         => $row['name'],
-                    'weight_kg'    => $row['weight_kg'],
-                    'length_cm'    => $row['length_cm'],
-                    'width_cm'     => $row['width_cm'],
-                    'height_cm'    => $row['height_cm'],
-                    'quantity'     => $row['quantity'],
-                    'status'       => 'pending',
-                    'is_carryover' => false,
+        $importErrors = [];
+        $groups       = []; // key: "depotId_cityId" → ['depot_id', 'city_id', 'items']
+
+        foreach ($rawRows as $i => $row) {
+            $lineNo    = $i + 2; // baris Excel (baris 1 adalah header)
+            $depotName = $row['depot_asal'];
+            $cityName  = $row['kota_tujuan'];
+
+            if (empty($depotName)) {
+                $importErrors[] = "Baris {$lineNo}: Kolom G (Depot Asal) kosong.";
+                continue;
+            }
+            if (empty($cityName)) {
+                $importErrors[] = "Baris {$lineNo}: Kolom H (Kota Tujuan) kosong.";
+                continue;
+            }
+
+            $depotId = $depotMap[$depotName] ?? null;
+            if (!$depotId) {
+                $importErrors[] = "Baris {$lineNo}: Depot '{$depotName}' tidak ditemukan di database.";
+                continue;
+            }
+
+            $cityId = $cityMap[$cityName] ?? null;
+            if (!$cityId) {
+                $importErrors[] = "Baris {$lineNo}: Kota tujuan '{$cityName}' tidak ditemukan di database.";
+                continue;
+            }
+
+            $key = "{$depotId}_{$cityId}";
+            if (!isset($groups[$key])) {
+                $groups[$key] = ['depot_id' => $depotId, 'city_id' => $cityId, 'items' => []];
+            }
+            $groups[$key]['items'][] = $row;
+        }
+
+        if (empty($groups)) {
+            return back()
+                ->with('error', 'Tidak ada baris valid yang dapat diimport.')
+                ->with('import_errors', $importErrors);
+        }
+
+        $totalItems = 0;
+        DB::transaction(function () use ($groups, &$totalItems) {
+            foreach ($groups as $group) {
+                // Satu DeliveryOrder per kombinasi depot-asal + kota-tujuan
+                $order = DeliveryOrder::create([
+                    'order_date'           => Carbon::today(),
+                    'origin_depot_id'      => $group['depot_id'],
+                    'destination_city_id'  => $group['city_id'],
+                    'source'               => 'excel',
+                    'status'               => 'pending',
                 ]);
+
+                foreach ($group['items'] as $row) {
+                    Item::create([
+                        'order_id'     => $order->id,
+                        'name'         => $row['name'],
+                        'weight_kg'    => $row['weight_kg'],
+                        'length_cm'    => $row['length_cm'],
+                        'width_cm'     => $row['width_cm'],
+                        'height_cm'    => $row['height_cm'],
+                        'quantity'     => $row['quantity'],
+                        'status'       => 'menunggu',
+                        'is_carryover' => false,
+                    ]);
+                    $totalItems++;
+                }
             }
         });
 
         return redirect()->route('pso.orders')
-            ->with('success', count($rows) . ' barang dari Excel berhasil diimport!');
+            ->with('success', "{$totalItems} barang dari Excel berhasil diimport!")
+            ->with('import_errors', $importErrors);
     }
 
     // Endpoint API untuk ambil data items
     public function items()
     {
         $items = Item::where('status', 'menunggu')
-            ->whereHas('deliveryOrder', fn($q) => $q->whereDate('order_date', Carbon::today())->where('status', 'pending'))
+            ->where(function ($q) {
+                $q->whereHas('deliveryOrder', fn($dq) =>
+                    $dq->whereDate('order_date', Carbon::today())->where('status', 'pending')
+                )
+                ->orWhere(function ($cq) {
+                    $cq->where('is_carryover', true)
+                       ->whereHas('deliveryOrder', fn($dq) => $dq->where('status', 'pending'));
+                });
+            })
             ->with('deliveryOrder.originDepot', 'deliveryOrder.destinationCity')
             ->get()->map(fn($item) => [
                 'id'            => $item->id,
@@ -160,7 +235,17 @@ class PsoController extends Controller
     // Halaman Optimasi & Hasil PSO
     public function results()
     {
-        return view('pso.results');
+        // Data semua kota — dikirim ke view supaya JS tahu mana depot dan mana kota biasa
+        $allCities = City::where('is_active', true)
+            ->get()
+            ->map(fn($c) => [
+                'name'     => $c->name,
+                'lat'      => (float) $c->latitude,
+                'lon'      => (float) $c->longitude,
+                'is_depot' => (bool) $c->is_depot,
+            ]);
+    
+        return view('pso.results', compact('allCities'));
     }
 
     // Jalankan Python PSO
@@ -171,8 +256,19 @@ class PsoController extends Controller
                 return response()->json(['error' => 'shell_exec tidak tersedia di PHP ini'], 500);
             }
 
+            // Ambil semua barang yang perlu dikirim:
+            // (1) barang baru hari ini dari order pending, ATAU
+            // (2) barang carry-over dari order pending manapun (termasuk hari sebelumnya)
             $dbItems = Item::where('status', 'menunggu')
-                ->whereHas('deliveryOrder', fn($q) => $q->whereDate('order_date', Carbon::today())->where('status', 'pending'))
+                ->where(function ($q) {
+                    $q->whereHas('deliveryOrder', fn($dq) =>
+                        $dq->whereDate('order_date', Carbon::today())->where('status', 'pending')
+                    )
+                    ->orWhere(function ($cq) {
+                        $cq->where('is_carryover', true)
+                           ->whereHas('deliveryOrder', fn($dq) => $dq->where('status', 'pending'));
+                    });
+                })
                 ->with('deliveryOrder.originDepot', 'deliveryOrder.destinationCity')
                 ->get();
 
@@ -262,6 +358,16 @@ class PsoController extends Controller
                 ], 500);
             }
 
+            // ── Filter truk "ghost" (idle, tidak bawa barang) dari output PSO ──
+            // Ini mencegah PSO menampilkan lebih banyak truk dari yang aktif karena
+            // partikel PSO bisa menghasilkan entri untuk truk yang tidak kebagian barang.
+            if (isset($result['best_routes'])) {
+                $result['best_routes'] = array_filter(
+                    $result['best_routes'],
+                    fn($route) => !empty($route['items'])
+                );
+            }
+
             session(['hasil_pso_temp' => $result]);
             return response()->json($result);
 
@@ -304,8 +410,20 @@ class PsoController extends Controller
                 }
             }
     
-            DeliveryOrder::whereDate('order_date', $today)->update(['status' => 'selesai']);
-    
+            // Ambil order_id dari barang yang tidak masuk truk manapun (akan jadi carry-over)
+            $carryoverOrderIds = Item::where('status', 'menunggu')
+                ->pluck('order_id')->unique()->values()->toArray();
+
+            // Tandai sisa barang sebagai carry-over untuk besok
+            Item::where('status', 'menunggu')->update(['is_carryover' => true]);
+
+            // Tandai pesanan hari ini sebagai selesai, KECUALI yang masih
+            // punya barang carry-over — biarkan 'pending' supaya terpick-up
+            // oleh query run() besok tanpa perlu filter tanggal
+            DeliveryOrder::whereDate('order_date', $today)
+                ->whereNotIn('id', $carryoverOrderIds)
+                ->update(['status' => 'selesai']);
+
             DB::commit();
             session()->forget('hasil_pso_temp');
             return redirect()->route('pso.results')->with('success', 'Hasil optimasi tersimpan!');
