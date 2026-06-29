@@ -9,19 +9,19 @@
 <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
     <header class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-md shadow-violet-100">
+            <div class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md shadow-violet-100">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
             <div>
-                <h1 class="text-2xl font-extrabold text-slate-900">Optimasi & Hasil PSO</h1>
-                <p class="text-sm text-slate-500">Jalankan algoritma PSO untuk alokasi truk terbaik.</p>
+                <h1 class="text-2xl font-extrabold text-slate-900">Optimasi & Hasil</h1>
+                <p class="text-sm text-slate-500">Simulasikan perhitungan cerdas untuk pembagian muatan dan armada pengiriman terbaik</p>
             </div>
         </div>
     </header>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div id="status-text" class="text-sm text-slate-600">Siap menjalankan optimasi berdasarkan pesanan hari ini.</div>
-        <button id="btn-run" onclick="runPSO()" class="relative bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-md flex items-center gap-2 w-fit">🚀 Jalankan Optimasi PSO</button>
+        <button id="btn-run" onclick="runPSO()" class="relative bg-blue-600 hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-md flex items-center gap-2 w-fit">Jalankan Optimasi</button>
     </div>
 
     <div id="area-hasil" class="hidden space-y-6">

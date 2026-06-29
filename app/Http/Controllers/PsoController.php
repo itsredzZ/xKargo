@@ -264,7 +264,6 @@ class PsoController extends Controller
 
             session(['hasil_pso_temp' => $result]);
             return response()->json($result);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'PHP Exception: ' . $e->getMessage(),
@@ -279,12 +278,12 @@ class PsoController extends Controller
     {
         $hasil = session('hasil_pso_temp');
         if (!$hasil) return redirect()->back()->withErrors('Tidak ada hasil optimasi.');
-    
+
         DB::beginTransaction();
         try {
             $today   = Carbon::today();
             $batchId = 'PSO-' . $today->format('Ymd') . '-' . time(); // ← tambah batch_id
-    
+
             foreach ($hasil['best_routes'] as $truckId => $ri) {
                 SimulationResult::create([
                     'batch_id'          => $batchId,           // ← tambah ini
@@ -298,18 +297,36 @@ class PsoController extends Controller
                     'net_profit'        => ($ri['tarif'] ?? 0) - ($ri['biaya_bbm'] ?? 0),
                     'gbest_curve_json'  => $hasil['gbest_curve'] ?? [],
                 ]);
-    
+
                 foreach ($ri['items'] ?? [] as $it) {
                     Item::where('id', $it['id'])->update(['status' => 'terkirim']);
                 }
+
+                // Ambil objek truk dulu agar bisa akses home_depot_id
+                $truck = Truck::find($truckId);
+                if (!$truck) continue;
+
+                $rute = $ri['rute'] ?? [];
+                $kotaTerakhir = !empty($rute) ? end($rute) : null;
+
+                // Saat PSO disimpan -> truk sedang jalan (on_duty)
+                $updateTruk = ['operational_status' => 'on_duty'];
+
+                if ($kotaTerakhir) {
+                    $kota = City::where('name', $kotaTerakhir)->first();
+                    if ($kota) {
+                        $updateTruk['current_city_id'] = $kota->id;
+                    }
+                }
+
+                $truck->update($updateTruk);
             }
-    
+
             DeliveryOrder::whereDate('order_date', $today)->update(['status' => 'selesai']);
-    
+
             DB::commit();
             session()->forget('hasil_pso_temp');
             return redirect()->route('pso.results')->with('success', 'Hasil optimasi tersimpan!');
-    
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withErrors('Gagal simpan: ' . $e->getMessage());

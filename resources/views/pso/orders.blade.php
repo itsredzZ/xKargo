@@ -4,7 +4,7 @@
 <div class="max-w-5xl mx-auto px-4 py-8 w-full font-sans">
     <header class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-teal-600 flex items-center justify-center shadow-md shadow-teal-100">
+            <div class="w-12 h-12 rounded-2xl bg-blue-700 flex items-center justify-center shadow-md shadow-teal-100">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
             </div>
             <div>
@@ -47,7 +47,7 @@
                     <option value="">Pilih Kota Tujuan...</option>
                     @foreach($allCities as $c)<option value="{{ $c->id }}">{{ $c->name }} {{ $c->is_depot ? '(Depot)' : '' }}</option>@endforeach
                 </select>
-                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl text-sm font-bold shadow-md">Tambah ke Antrian</button>
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-bold shadow-md">Tambah ke Antrian</button>
             </form>
 
             {{-- ========================================== --}}

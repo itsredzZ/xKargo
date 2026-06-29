@@ -118,7 +118,7 @@
                 {{-- PERBAIKAN 2: Memasukkan menu Utama / Dashboard (Pesan titipan Valen) --}}
                 <a href="{{ route('dashboard') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition font-medium {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                     <span>Dashboard</span>
+                     <span>beranda</span>
                 </a>
 
                 {{-- Grup: Data Master --}}
@@ -146,7 +146,7 @@
 
                 {{-- Grup: PSO Engine (Streamlit embed) --}}
                 <p class="text-blue-400 text-xs font-semibold uppercase tracking-wider px-3 pt-5 pb-1">
-                    PSO Engine
+                    Sistem Alokasi Cerdas
                 </p>
                 <a href="{{ route('pso.orders') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.orders') ? 'active' : '' }}">
@@ -154,7 +154,7 @@
                 </a>
                 <a href="{{ route('pso.results') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('pso.results') ? 'active' : '' }}">
-                    <span>Hasil & Peta</span>
+                    <span>Hasil Optimasi</span>
                 </a>
 
                 {{-- Grup: Administrasi --}}
@@ -167,7 +167,7 @@
                 </a>
                 <a href="{{ route('settings.index') }}"
                     class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                    <span>Parameter PSO</span>
+                    <span>Pengaturan</span>
                 </a>
             </nav>
 

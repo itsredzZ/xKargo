@@ -57,20 +57,17 @@ class CityWebController extends Controller
         return back()->with('success', "\"{$city->name}\" sekarang berstatus {$tipe}.");
     }
 
-    public function destroy($id)
+    public function destroy(City $city)
     {
-        // 1. Bersihkan semua data jarak yang terhubung dengan kota ini terlebih dahulu
-        // GANTI nama kolom sesuai dengan yang ada di struktur database
-        $city = City::findOrFail($id);
-        DB::table('depot_distances')->where('city_a_id', $id)->orWhere('city_b_id', $id)->delete();
-        $city->delete();
+        DB::table('depot_distances')
+            ->where('city_a_id', $city->id)
+            ->orWhere('city_b_id', $city->id)
+            ->delete();
 
-        // 2. Setelah jalur bersih, hapus kota utama
-        $city = \App\Models\City::findOrFail($id);
         $city->delete();
 
         return redirect()->route('cities.index')
-            ->with('success', 'Kota berhasil dihapus dari sistem beserta rute jaraknya.');
+            ->with('success', 'Kota berhasil dihapus beserta rute jaraknya.');
     }
 
     // ─────────────────────────────────────────────────────

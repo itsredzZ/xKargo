@@ -9,7 +9,7 @@
     {{-- ── HEADER ──────────────────────────────────────────────────── --}}
     <header class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center shadow-md flex-shrink-0">
+            <div class="w-10 h-10 rounded-2xl bg-blue-700 flex items-center justify-center shadow-md flex-shrink-0">
                 {{-- Gear / settings icon --}}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none"
                      viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
