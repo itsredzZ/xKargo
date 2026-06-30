@@ -93,7 +93,6 @@
 
     <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
 
-        {{-- ── HEADER ─────────────────────────────────────────────────────── --}}
         <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div class="flex items-center gap-4">
                 <div
@@ -124,7 +123,6 @@
             </span>
         </header>
 
-        {{-- ── KPI CARDS ──────────────────────────────────────────────────── --}}
         @php
             $total = $summary['total'] ?: 1;
             $pctSiap = round(($summary['available'] / $total) * 100);
@@ -134,7 +132,6 @@
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
 
-            {{-- Total --}}
             <div class="kpi-animate bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Armada</p>
@@ -151,7 +148,6 @@
                 </div>
             </div>
 
-            {{-- Siap Jalan --}}
             <div class="kpi-animate bg-white rounded-2xl border border-emerald-200 shadow-sm p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-bold text-emerald-600 uppercase tracking-widest">Siap Jalan</p>
@@ -173,7 +169,6 @@
                 <p class="text-[11px] text-emerald-600 mt-1.5 font-medium">{{ $pctSiap }}% dari armada</p>
             </div>
 
-            {{-- Dalam Perjalanan --}}
             <div class="kpi-animate bg-white rounded-2xl border border-amber-200 shadow-sm p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-bold text-amber-600 uppercase tracking-widest">Dalam Perjalanan</p>
@@ -197,7 +192,6 @@
                 <p class="text-[11px] text-amber-600 mt-1.5 font-medium">{{ $pctJalan }}% sedang beroperasi</p>
             </div>
 
-            {{-- Di Bengkel --}}
             <div class="kpi-animate bg-white rounded-2xl border border-red-200 shadow-sm p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-bold text-red-500 uppercase tracking-widest">Di Bengkel</p>
@@ -220,7 +214,6 @@
             </div>
         </div>
 
-        {{-- ── BAR KOMPOSISI ARMADA ────────────────────────────────────────── --}}
         @if ($summary['total'] > 0)
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-4 mb-6">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
@@ -257,7 +250,6 @@
             </div>
         @endif
 
-        {{-- ── PERINGATAN: 0 truk siap jalan ─────────────────────────────── --}}
         @if ($summary['available'] === 0)
             <div
                 class="mb-6 flex items-start gap-3 bg-red-50 border border-red-200
@@ -276,7 +268,6 @@
             </div>
         @endif
 
-        {{-- ── FORM DAFTARKAN TRUK ────────────────────────────────────────── --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
 
             <header
@@ -307,7 +298,6 @@
                     <form method="POST" action="{{ route('trucks.store') }}" class="space-y-5">
                         @csrf
 
-                        {{-- Baris 1: Plat · Jenis · Depot --}}
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="plate_number"
@@ -361,7 +351,6 @@
                             </div>
                         </div>
 
-                        {{-- Baris 2: Spesifikasi (auto-isi dari preset) --}}
                         <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">
                                 Spesifikasi
@@ -428,13 +417,11 @@
             </div>
         </section>
 
-        {{-- ── TABEL ───────────────────────────────────────────────────────── --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
 
             <div
                 class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
-                {{-- Filter tabs via URL --}}
                 @php $fStat = request('status', 'all'); @endphp
                 <div class="flex items-center gap-2 flex-wrap">
                     <a href="{{ route('trucks.index', array_merge(request()->query(), ['status' => 'all'])) }}"
@@ -455,7 +442,6 @@
                     </a>
                 </div>
 
-                {{-- Search via Form GET --}}
                 <form method="GET" action="{{ route('trucks.index') }}" class="relative w-full sm:w-60">
                     @if (request('status'))
                         <input type="hidden" name="status" value="{{ request('status') }}">
@@ -521,7 +507,6 @@
                                 data-depot="{{ strtolower($truck->homeDepot?->name ?? '') }}"
                                 data-status="{{ $truck->operational_status }}">
 
-                                {{-- Kendaraan --}}
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div
@@ -547,7 +532,6 @@
                                     </div>
                                 </td>
 
-                                {{-- Kondisi --}}
                                 <td class="px-6 py-4 text-center">
                                     <span
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5
@@ -557,7 +541,6 @@
                                     </span>
                                 </td>
 
-                                {{-- Muatan --}}
                                 <td class="px-6 py-4 text-right">
                                     <span class="text-sm font-semibold text-slate-700">
                                         {{ number_format($truck->max_weight_kg, 0) }}
@@ -565,7 +548,6 @@
                                     <span class="text-xs text-slate-400 ml-0.5">kg</span>
                                 </td>
 
-                                {{-- Depot Asal --}}
                                 <td class="px-6 py-4">
                                     <span
                                         class="inline-flex items-center gap-1.5 text-xs
@@ -575,7 +557,6 @@
                                     </span>
                                 </td>
 
-                                {{-- Lokasi Kini --}}
                                 <td class="px-6 py-4">
                                     <span
                                         class="font-mono text-xs text-slate-500
@@ -584,7 +565,6 @@
                                     </span>
                                 </td>
 
-                                {{-- Tombol --}}
                                 <td class="px-6 py-4 text-center">
                                     <button type="button" onclick="bukaModalEdit({{ $truck->id }})"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5
@@ -630,7 +610,6 @@
 
     </div>
 
-    {{-- ── MODAL UBAH DATA ─────────────────────────────────────────────────── --}}
     <div id="modal-edit-truk" class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-edit-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl mx-4 overflow-hidden">
@@ -777,7 +756,6 @@
         </div>
     </div>
 
-    {{-- ── MODAL KONFIRMASI HAPUS ──────────────────────────────────────────── --}}
     <div id="modal-hapus-truk" class="fixed inset-0 z-[60] items-center justify-center bg-black/50 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-hapus-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm mx-4 p-6">
@@ -823,9 +801,7 @@
         </div>
     </div>
 
-    {{-- ── SCRIPTS ─────────────────────────────────────────────────────────── --}}
     <script>
-        // Data dari PHP → JS
         @php
             $truckData = $trucks->map(
                 fn($t) => [
@@ -844,7 +820,6 @@
         const TRUCK_DATA = @json($truckData);
         const PRESETS = @json($presets);
 
-        // ── Toggle form tambah ─────────────────────────────────────────────
         let formOpen = true;
 
         function toggleForm() {
@@ -853,7 +828,6 @@
             document.getElementById('form-chevron').classList.toggle('collapsed', !formOpen);
         }
 
-        // ── Preset auto-fill ───────────────────────────────────────────────
         function applyPreset(type) {
             const p = PRESETS[type];
             if (!p) return;
@@ -869,7 +843,6 @@
             applyPreset(elType.value);
         }
 
-        // ── Modal Edit ─────────────────────────────────────────────────────
         let currentTruckId = null;
 
         function bukaModalEdit(id) {
@@ -896,7 +869,6 @@
             currentTruckId = null;
         }
 
-        // ── Modal Hapus ────────────────────────────────────────────────────
         function bukaModalHapusTruk() {
             if (!currentTruckId) return;
             document.getElementById('form-hapus-truk').action = `/trucks/${currentTruckId}`;
@@ -907,7 +879,6 @@
             document.getElementById('modal-hapus-truk').classList.remove('aktif');
         }
 
-        // Tutup dengan klik luar / Escape
         document.getElementById('modal-edit-truk').addEventListener('click', function(e) {
             if (e.target === this) tutupModalEdit();
         });
@@ -922,7 +893,6 @@
                 tutupModalEdit();
         });
 
-        // ── Filter + Search tabel ──────────────────────────────────────────
         let filterAktif = 'all';
 
         function filterTabel(filter, btn) {

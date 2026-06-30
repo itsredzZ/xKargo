@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/DepotWebController.php
 
 namespace App\Http\Controllers;
 
@@ -20,7 +19,6 @@ class DepotWebController extends Controller
         $allTrucks = \App\Models\Truck::where('is_active', true)->get();
         $trucksByDepot = $allTrucks->groupBy('current_city_id');
 
-        // Hitung ringkasan untuk kartu KPI
         $totalTrucks = $allTrucks->count();
         $totalAvail   = $allTrucks->where('operational_status', 'available')->count();
         $totalDuty    = $allTrucks->where('operational_status', 'on_duty')->count();
@@ -36,13 +34,11 @@ class DepotWebController extends Controller
         ));
     }
 
-    // Buka app/Http/Controllers/DepotWebController.php
 
     public function updateCapacity(Request $request)
     {
         $depot = \App\Models\City::findOrFail($request->depot_id);
 
-        // Pastikan is_active masuk dalam daftar update
         $depot->update($request->only(['max_truck_capacity', 'max_warehouse_kg', 'is_active']));
 
         return back()->with('success', 'Status gudang diperbarui.');

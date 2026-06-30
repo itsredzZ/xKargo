@@ -18,7 +18,6 @@
             font-family: inherit;
         }
 
-        /* Custom marker popup */
         .popup-depot {
             font-weight: 700;
             color: #4338CA;
@@ -29,7 +28,6 @@
             color: #0f766e;
         }
 
-        /* Confirm modal */
         #modal-hapus {
             display: none;
         }
@@ -41,7 +39,6 @@
 
     <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
 
-        {{-- ─── PAGE HEADER ─────────────────────────────── --}}
         <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div class="flex items-center gap-4">
                 <div
@@ -68,7 +65,6 @@
             </div>
         </header>
 
-        {{-- ─── PETA LEAFLET ────────────────────────────── --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
             <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
                 <div class="flex items-center gap-2">
@@ -91,7 +87,6 @@
             <div id="peta-kota"></div>
         </section>
 
-        {{-- ─── FORM TAMBAH KOTA ────────────────────────── --}}
         <section aria-labelledby="form-heading"
             class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 transition-all hover:shadow-md">
             <header class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -160,7 +155,6 @@
             </div>
         </section>
 
-        {{-- ─── TABEL KOTA ──────────────────────────────── --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div
                 class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -194,7 +188,6 @@
                             <tr class="hover:bg-slate-50 transition-colors group"
                                 data-nama="{{ strtolower($city->name) }}">
 
-                                {{-- Nama + ikon --}}
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2.5">
                                         @if ($city->is_depot)
@@ -226,14 +219,12 @@
                                     </div>
                                 </td>
 
-                                {{-- Koordinat --}}
                                 <td class="px-6 py-4">
                                     <span class="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
                                         {{ number_format($city->latitude, 4) }}, {{ number_format($city->longitude, 4) }}
                                     </span>
                                 </td>
 
-                                {{-- Badge tipe --}}
                                 <td class="px-6 py-4 text-center">
                                     @if ($city->is_depot)
                                         <span
@@ -250,7 +241,6 @@
                                     @endif
                                 </td>
 
-                                {{-- Tombol ubah tipe --}}
                                 <td class="px-6 py-4 text-center">
                                     <form method="POST" action="{{ route('cities.toggleDepot', $city->id) }}">
                                         @csrf
@@ -271,7 +261,6 @@
                                     </form>
                                 </td>
 
-                                {{-- Tombol hapus --}}
                                 <td class="px-6 py-4 text-center">
                                     <button type="button"
                                         onclick="bukaModalHapus({{ $city->id }}, '{{ addslashes($city->name) }}')"
@@ -313,7 +302,6 @@
 
     </div>
 
-    {{-- ─── MODAL KONFIRMASI HAPUS ───────────────────────── --}}
     <div id="modal-hapus" class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm mx-4 p-6">
@@ -355,10 +343,7 @@
         </div>
     </div>
 
-    {{-- ─── SCRIPTS ──────────────────────────────────────── --}}
     <script>
-        // ── Data kota dari Laravel → JS ──────────────────────
-        // ── Data kota dari Laravel → JS ──────────────────────
         @php
             $kotaMap = [];
             foreach ($allCities as $c) {
@@ -373,7 +358,6 @@
         @endphp
         const datakota = @json($kotaMap);
 
-        // ── Peta Leaflet ─────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function() {
             const peta = L.map('peta-kota', {
                 zoomControl: true
@@ -384,7 +368,6 @@
                 maxZoom: 18,
             }).addTo(peta);
 
-            // Icon khusus depot (kotak indigo) dan kota reguler (lingkaran teal)
             const ikonDepot = L.divIcon({
                 className: '',
                 html: `<div style="width:20px;height:20px;background:#4F46E5;border-radius:4px;border:2px solid white;box-shadow:0 2px 6px rgba(79,70,229,0.45)"></div>`,
@@ -434,7 +417,6 @@
                 });
             }
 
-            // Tambah garis koneksi antar depot (tipis, dekoratif)
             const depot = datakota.filter(k => k.is_depot);
             for (let i = 0; i < depot.length; i++) {
                 for (let j = i + 1; j < depot.length; j++) {
@@ -451,7 +433,6 @@
             }
         });
 
-        // ── Modal hapus ──────────────────────────────────────
         function bukaModalHapus(id, nama) {
             document.getElementById('modal-nama-kota').textContent = nama;
             document.getElementById('form-hapus').action = "{{ url('cities') }}/" + id;
@@ -461,16 +442,13 @@
         function tutupModalHapus() {
             document.getElementById('modal-hapus').classList.remove('aktif');
         }
-        // Tutup modal klik di luar box
         document.getElementById('modal-hapus').addEventListener('click', function(e) {
             if (e.target === this) tutupModalHapus();
         });
-        // Tutup modal dengan Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') tutupModalHapus();
         });
 
-        // ── Search / filter tabel ────────────────────────────
         document.getElementById('search-kota').addEventListener('input', function() {
             const q = this.value.toLowerCase();
             document.querySelectorAll('#tbody-kota tr[data-nama]').forEach(function(tr) {

@@ -31,7 +31,7 @@
         </div>
     </header>
 
-    {{-- ─── FLASH MESSAGES ─────────────────────────────────────── --}}
+    {{-- ─── FLASH MESSAGES ───────────────────────────────────────
     @if(session('success'))
     <div class="mb-5 flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700 font-semibold">
         ✅ {{ session('success') }}
@@ -41,7 +41,7 @@
     <div class="mb-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-semibold">
         ❌ {{ session('error') }}
     </div>
-    @endif
+    @endif --}}
 
     {{-- Error baris Excel (jika ada baris yang gagal diimport) --}}
     @if(session('import_errors') && count(session('import_errors')) > 0)
