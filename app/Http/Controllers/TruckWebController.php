@@ -1,7 +1,4 @@
 <?php
-// app/Http/Controllers/TruckWebController.php
-// Pola 1: Baca/tulis langsung ke db_xkargo.trucks
-// Setara halaman 2_Master_Data_Truk.py di Streamlit
 
 namespace App\Http\Controllers;
 
@@ -11,7 +8,6 @@ use Illuminate\Http\Request;
 
 class TruckWebController extends Controller
 {
-    // Preset sinkron dengan TRUCK_PRESETS di 2_Master_Data_Truk.py
     const PRESETS = [
         'mobil_box'   => ['label' => 'Mobil Box',    'max_kg' => 1000,  'p' => 200,  'l' => 130, 't' => 130, 'fuel' => 12.0],
         'pickup'      => ['label' => 'Pickup',        'max_kg' => 2000,  'p' => 250,  'l' => 160, 't' => 130, 'fuel' => 10.0],
@@ -25,15 +21,12 @@ class TruckWebController extends Controller
 
     public function index(\Illuminate\Http\Request $request)
     {
-        // 1. Siapkan kerangka pencarian
         $query = Truck::with(['homeDepot', 'currentCity'])->where('is_active', true);
 
-        // 2. Tangkap perintah Filter Status
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('operational_status', $request->status);
         }
 
-        // 3. Tangkap perintah Pencarian Teks
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -44,13 +37,11 @@ class TruckWebController extends Controller
             });
         }
 
-        // 4. Eksekusi dengan Paginasi (withQueryString agar filter tidak hilang saat pindah halaman)
         $trucks = $query->orderBy('home_depot_id')
             ->orderBy('plate_number')
             ->paginate(10)
             ->withQueryString();
 
-        // Data utuh untuk Kartu KPI di atas (agar angkanya tetap 12 walau difilter)
         $allTrucks = Truck::where('is_active', true)->get();
 
         $depots  = City::depot()->orderBy('name')->get();
@@ -124,7 +115,6 @@ class TruckWebController extends Controller
         return back()->with('success', "Informasi kendaraan '{$truck->plate_number}' berhasil diperbarui.");
     }
 
-    // Tambahkan method ini di TruckWebController
     public function getPresets()
     {
         return response()->json(self::PRESETS);
