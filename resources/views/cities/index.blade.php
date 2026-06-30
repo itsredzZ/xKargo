@@ -1,47 +1,56 @@
 @extends('layouts.app')
+{{-- Mengatur judul halaman yang akan ditampilkan di tab browser --}}
 @section('title', 'Manajemen Kota dan Jaringan')
 
 @section('content')
-    {{-- Leaflet.js untuk peta interaktif --}}
+    {{-- Memuat library Leaflet.js untuk menampilkan peta interaktif --}}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        {{-- Mengatur tinggi dan lebar container peta --}}
         #peta-kota {
             height: 420px;
             width: 100%;
             border-radius: 0 0 0 0;
-            z-index: 0;
+            z-index: 0; /* Z-index rendah agar popup tetap terlihat */
         }
 
+        {{-- Override font default Leaflet agar mengikuti font utama halaman --}}
         .leaflet-container {
             font-family: inherit;
         }
 
+        {{-- Gaya teks popup untuk kota bertipe depot (ungu) --}}
         .popup-depot {
             font-weight: 700;
             color: #4338CA;
         }
 
+        {{-- Gaya teks popup untuk kota bertipe reguler (teal) --}}
         .popup-reguler {
             font-weight: 600;
             color: #0f766e;
         }
 
+        {{-- Sembunyikan modal hapus secara default --}}
         #modal-hapus {
             display: none;
         }
 
+        {{-- Tampilkan modal saat diberi class 'aktif' (dipicu via JavaScript) --}}
         #modal-hapus.aktif {
             display: flex;
         }
     </style>
 
+    {{-- Container utama halaman dengan lebar maksimal dan padding responsif --}}
     <div class="max-w-7xl mx-auto px-4 py-8 w-full font-sans">
 
-        {{-- Header --}}
+        {{-- ==================== HEADER HALAMAN ==================== --}}
         <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div class="flex items-center gap-4">
+                {{-- Ikon globe sebagai identitas visual halaman --}}
                 <div
                     class="w-12 h-12 rounded-2xl bg-blue-700 flex items-center justify-center shadow-md shadow-blue-100 flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"
@@ -49,16 +58,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    </svg>
                 </div>
                 <div>
                     <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Manajemen Kota &amp; Jaringan</h1>
+                    {{-- Deskripsi singkat fungsi halaman --}}
                     <p class="text-sm text-slate-500 mt-0.5">
                         Kelola status wilayah sebagai titik reguler atau pusat distribusi.
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-2 pl-10 md:pl-0">
+                {{-- Badge yang menampilkan total jumlah kota yang terdaftar --}}
                 <span
                     class="text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5">
                     {{ $cities->total() }} kota terdaftar
@@ -66,8 +76,9 @@
             </div>
         </header>
 
-        {{-- Peta --}}
+        {{-- ==================== SECTION PETA INTERAKTIF ==================== --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+            {{-- Bar header peta: judul dan legenda warna marker --}}
             <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
                 <div class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none"
@@ -77,6 +88,7 @@
                     </svg>
                     <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Peta Kota Aktif</span>
                 </div>
+                {{-- Legenda: menjelaskan makna warna marker di peta --}}
                 <div class="flex items-center gap-4 text-xs text-slate-500">
                     <span class="flex items-center gap-1.5">
                         <span class="w-3 h-3 rounded-sm bg-indigo-600 inline-block"></span> Depot
@@ -86,10 +98,11 @@
                     </span>
                 </div>
             </div>
+            {{-- Container ini akan diisi peta Leaflet oleh JavaScript --}}
             <div id="peta-kota"></div>
         </section>
 
-        {{-- Tambah kota --}}
+        {{-- ==================== FORM TAMBAH KOTA BARU ==================== --}}
         <section aria-labelledby="form-heading"
             class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 transition-all hover:shadow-md">
             <header class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -102,6 +115,7 @@
             </header>
 
             <div class="p-6">
+                {{-- Menampilkan pesan error validasi jika ada --}}
                 @if ($errors->any())
                     <div class="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
                         <ul class="list-disc list-inside space-y-1">
@@ -112,10 +126,12 @@
                     </div>
                 @endif
 
+                {{-- Form POST ke route 'cities.store' untuk menyimpan kota baru --}}
                 <form method="POST" action="{{ route('cities.store') }}"
                     class="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
-                    @csrf
+                    @csrf {{-- Token CSRF untuk keamanan form --}}
 
+                    {{-- Input nama kota (6 kolom dari 12) --}}
                     <div class="md:col-span-6">
                         <label for="city_name" class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
                             Nama Kota / Kabupaten
@@ -125,6 +141,7 @@
                             placeholder="Contoh: Lumajang" required autocomplete="off">
                     </div>
 
+                    {{-- Checkbox untuk menandai kota sebagai depot (3 kolom) --}}
                     <div class="md:col-span-3 pb-3">
                         <label class="flex items-center gap-3 cursor-pointer group">
                             <div class="relative flex items-center">
@@ -142,6 +159,7 @@
                         </label>
                     </div>
 
+                    {{-- Tombol submit (3 kolom) --}}
                     <div class="md:col-span-3">
                         <button type="submit"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2">
@@ -158,11 +176,13 @@
             </div>
         </section>
 
-        {{-- Tabel kota --}}
+        {{-- ==================== TABEL DAFTAR KOTA ==================== --}}
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            {{-- Bar header tabel: judul dan input pencarian --}}
             <div
                 class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-3">
                 <h2 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Daftar Kota</h2>
+                {{-- Input pencarian real-time (tanpa reload halaman, difilter via JS) --}}
                 <div class="relative w-full sm:w-64">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -187,15 +207,19 @@
                             <th class="px-6 py-3.5 font-bold text-center">Hapus</th>
                         </tr>
                     </thead>
+
+                    {{-- Body tabel: loop seluruh kota dengan pagination --}}
                     <tbody class="divide-y divide-slate-100" id="tbody-kota">
                         @forelse($cities as $city)
+                            {{-- data-nama digunakan untuk pencarian real-time oleh JavaScript --}}
                             <tr class="hover:bg-slate-50 transition-colors group"
                                 data-nama="{{ strtolower($city->name) }}">
 
-                                {{-- Nama + ikon --}}
+                                {{-- Kolom Nama: menampilkan ikon berbeda berdasarkan tipe kota --}}
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2.5">
                                         @if ($city->is_depot)
+                                            {{-- Ikon gedung untuk depot --}}
                                             <span
                                                 class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600"
@@ -206,6 +230,7 @@
                                                 </svg>
                                             </span>
                                         @else
+                                            {{-- Ikon pin lokasi untuk kota reguler --}}
                                             <span
                                                 class="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-500"
@@ -224,14 +249,14 @@
                                     </div>
                                 </td>
 
-                                {{-- Koordinat --}}
+                                {{-- Kolom Koordinat: ditampilkan dalam format monospace --}}
                                 <td class="px-6 py-4">
                                     <span class="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
                                         {{ number_format($city->latitude, 4) }}, {{ number_format($city->longitude, 4) }}
                                     </span>
                                 </td>
 
-                                {{-- Tipe --}}
+                                {{-- Kolom Tipe: badge berwarna sesuai status depot/reguler --}}
                                 <td class="px-6 py-4 text-center">
                                     @if ($city->is_depot)
                                         <span
@@ -248,11 +273,13 @@
                                     @endif
                                 </td>
 
-                                {{-- Tombol ubah tipe --}}
+                                {{-- Kolom Aksi: tombol toggle tipe (depot ↔ reguler) --}}
                                 <td class="px-6 py-4 text-center">
+                                    {{-- Menggunakan method PATCH untuk update parsial --}}
                                     <form method="POST" action="{{ route('cities.toggleDepot', $city->id) }}">
                                         @csrf
                                         @method('PATCH')
+                                        {{-- Warna tombol berubah dinamis berdasarkan tipe saat ini --}}
                                         <button type="submit"
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all
                                         {{ $city->is_depot
@@ -269,7 +296,7 @@
                                     </form>
                                 </td>
 
-                                {{-- Tombol hapus --}}
+                                {{-- Kolom Hapus: membuka modal konfirmasi, bukan langsung menghapus --}}
                                 <td class="px-6 py-4 text-center">
                                     <button type="button"
                                         onclick="bukaModalHapus({{ $city->id }}, '{{ addslashes($city->name) }}')"
@@ -284,6 +311,7 @@
                                 </td>
                             </tr>
                         @empty
+                            {{-- Pesan kosong jika belum ada data kota --}}
                             <tr>
                                 <td colspan="5" class="px-6 py-16 text-center">
                                     <div class="flex flex-col items-center gap-3 text-slate-400">
@@ -304,6 +332,7 @@
                 </table>
             </div>
 
+            {{-- Komponen pagination Laravel --}}
             <div class="px-6 py-4 border-t border-slate-200 bg-white">
                 {{ $cities->links('pagination::tailwind') }}
             </div>
@@ -311,11 +340,13 @@
 
     </div>
 
-    {{-- Konfirmasi Hapus --}}
+    {{-- ==================== MODAL KONFIRMASI HAPUS ==================== --}}
+    {{-- Modal ini tersembunyi secara default, ditampilkan via JS saat tombol Hapus diklik --}}
     <div id="modal-hapus" class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm"
         role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm mx-4 p-6">
             <div class="flex items-start gap-4 mb-4">
+                {{-- Ikon peringatan hapus --}}
                 <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -325,6 +356,7 @@
                 </div>
                 <div>
                     <h3 id="modal-title" class="font-bold text-slate-900 text-sm">Hapus kota ini?</h3>
+                    {{-- Nama kota diisi secara dinamis oleh JavaScript --}}
                     <p class="text-sm text-slate-500 mt-1">
                         <span class="font-semibold text-slate-700" id="modal-nama-kota"></span>
                         dan semua data jarak terkait akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
@@ -332,13 +364,15 @@
                 </div>
             </div>
             <div class="flex gap-3 justify-end mt-2">
+                {{-- Tombol batal: menutup modal tanpa aksi apapun --}}
                 <button type="button" onclick="tutupModalHapus()"
                     class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
                     Batal
                 </button>
+                {{-- Form hapus: action URL diisi dinamis oleh JS berdasarkan ID kota --}}
                 <form id="form-hapus" method="POST" action="">
                     @csrf
-                    @method('DELETE')
+                    @method('DELETE') {{-- Menggunakan HTTP method DELETE untuk penghapusan --}}
                     <button type="submit"
                         class="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -353,39 +387,49 @@
         </div>
     </div>
 
+    {{-- ==================== JAVASCRIPT ==================== --}}
     <script>
         @php
+            {{-- Menyiapkan array data kota dari backend (PHP) ke format JavaScript --}}
+            {{-- Menggunakan $allCities (bukan $cities) agar SEMUA kota tampil di peta, --}}
+            {{-- bukan hanya yang ada di halaman pagination saat ini --}}
             $kotaMap = [];
             foreach ($allCities as $c) {
                 $kotaMap[] = [
                     'id' => $c->id,
                     'name' => $c->name,
-                    'lat' => (float) $c->latitude,
-                    'lon' => (float) $c->longitude,
-                    'is_depot' => (bool) $c->is_depot,
+                    'lat' => (float) $c->latitude,   // Pastikan tipe data float
+                    'lon' => (float) $c->longitude,   // Pastikan tipe data float
+                    'is_depot' => (bool) $c->is_depot, // Pastikan tipe data boolean
                 ];
             }
         @endphp
+        {{-- @json() mengkonversi array PHP menjadi JSON yang valid untuk JavaScript --}}
         const datakota = @json($kotaMap);
 
-        // Peta Leaflet
+        // ==================== INISIALISASI PETA LEAFLET ====================
         document.addEventListener('DOMContentLoaded', function() {
+            // Membuat peta baru, centered di koordinat Jawa Timur (~-7.6, 112.3), zoom level 8
             const peta = L.map('peta-kota', {
                 zoomControl: true
             }).setView([-7.6, 112.3], 8);
 
+            // Menambahkan layer tile dari OpenStreetMap (peta dasar)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18,
             }).addTo(peta);
 
+            // Membuat custom icon untuk marker depot (kotak ungu)
             const ikonDepot = L.divIcon({
                 className: '',
                 html: `<div style="width:20px;height:20px;background:#4F46E5;border-radius:4px;border:2px solid white;box-shadow:0 2px 6px rgba(79,70,229,0.45)"></div>`,
                 iconSize: [20, 20],
-                iconAnchor: [10, 10],
-                popupAnchor: [0, -14],
+                iconAnchor: [10, 10],    // Titik tengah ikon
+                popupAnchor: [0, -14],   // Posisi popup relatif terhadap ikon
             });
+
+            // Membuat custom icon untuk marker kota reguler (lingkaran teal)
             const ikonReguler = L.divIcon({
                 className: '',
                 html: `<div style="width:14px;height:14px;background:#2DD4BF;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(45,212,191,0.45)"></div>`,
@@ -394,16 +438,22 @@
                 popupAnchor: [0, -10],
             });
 
+            // Array untuk menyimpan semua koordinat, digunakan untuk auto-fit peta
             const bounds = [];
 
+            // Loop setiap kota untuk menambahkan marker ke peta
             datakota.forEach(function(kota) {
+                // Pilih ikon berdasarkan tipe kota
                 const ikon = kota.is_depot ? ikonDepot : ikonReguler;
                 const kelas = kota.is_depot ? 'popup-depot' : 'popup-reguler';
                 const label = kota.is_depot ? 'Depot' : 'Kota Reguler';
+
+                // Buat marker dan tambahkan ke peta
                 const marker = L.marker([kota.lat, kota.lon], {
                     icon: ikon
                 }).addTo(peta);
 
+                // Isi popup marker: nama, koordinat, dan badge tipe
                 marker.bindPopup(`
             <div style="font-family:inherit;min-width:140px;">
                 <div class="${kelas}" style="font-size:13px;margin-bottom:3px;">${kota.name}</div>
@@ -419,50 +469,72 @@
             </div>
         `);
 
+                // Tambahkan koordinat ke array bounds
                 bounds.push([kota.lat, kota.lon]);
             });
 
+            // Auto-fit peta agar semua marker terlihat, dengan padding 40px
             if (bounds.length > 0) {
                 peta.fitBounds(bounds, {
                     padding: [40, 40]
                 });
             }
 
+            // ==================== GARIS PENGHUBUNG ANTAR DEPOT ====================
+            // Filter hanya kota yang bertipe depot
             const depot = datakota.filter(k => k.is_depot);
+
+            // Gambar garis putus-putus antar setiap pasangan depot
             for (let i = 0; i < depot.length; i++) {
                 for (let j = i + 1; j < depot.length; j++) {
                     L.polyline([
                         [depot[i].lat, depot[i].lon],
                         [depot[j].lat, depot[j].lon]
                     ], {
-                        color: '#818CF8',
-                        weight: 1.2,
-                        opacity: 0.35,
-                        dashArray: '4 5'
+                        color: '#818CF8',    // Warna ungu muda
+                        weight: 1.2,         // Ketebalan garis
+                        opacity: 0.35,       // Transparansi
+                        dashArray: '4 5'     // Pola garis putus-putus
                     }).addTo(peta);
                 }
             }
         });
 
+        // ==================== FUNGSI MODAL HAPUS ====================
+
+        /**
+         * Membuka modal konfirmasi hapus
+         * @param {int} id   - ID kota yang akan dihapus
+         * @param {string} nama - Nama kota untuk ditampilkan di modal
+         */
         function bukaModalHapus(id, nama) {
             document.getElementById('modal-nama-kota').textContent = nama;
+            // Set action form ke URL DELETE kota yang bersangkutan
             document.getElementById('form-hapus').action = "{{ url('cities') }}/" + id;
             document.getElementById('modal-hapus').classList.add('aktif');
         }
 
+        /** Menutup modal hapus dengan menghapus class 'aktif' */
         function tutupModalHapus() {
             document.getElementById('modal-hapus').classList.remove('aktif');
         }
+
+        // Tutup modal jika klik di area overlay (luar konten modal)
         document.getElementById('modal-hapus').addEventListener('click', function(e) {
             if (e.target === this) tutupModalHapus();
         });
+
+        // Tutup modal jika user menekan tombol Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') tutupModalHapus();
         });
 
+        // ==================== FUNGSI PENCARIAN REAL-TIME ====================
+        // Filter baris tabel berdasarkan input pencarian tanpa reload halaman
         document.getElementById('search-kota').addEventListener('input', function() {
-            const q = this.value.toLowerCase();
+            const q = this.value.toLowerCase(); // Konversi ke huruf kecil untuk pencarian case-insensitive
             document.querySelectorAll('#tbody-kota tr[data-nama]').forEach(function(tr) {
+                // Sembunyikan baris jika nama kota tidak mengandung kata kunci
                 tr.style.display = tr.dataset.nama.includes(q) ? '' : 'none';
             });
         });
