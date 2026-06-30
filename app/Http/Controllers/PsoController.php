@@ -178,7 +178,7 @@ class PsoController extends Controller
                     'order_date'           => Carbon::today(),
                     'origin_depot_id'      => $group['depot_id'],
                     'destination_city_id'  => $group['city_id'],
-                    'source'               => 'excel',
+                    'source'               => 'excel_input',
                     'status'               => 'pending',
                 ]);
 
